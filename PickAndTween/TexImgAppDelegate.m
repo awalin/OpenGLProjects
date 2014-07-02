@@ -1,18 +1,21 @@
 //
-//  PNT_AppDelegate.m
-//  PickAndTween
+//  TexImgAppDelegate.m
+//  TexImg
 //
-//  Created by Sopan, Awalin on 7/1/14.
+//  Created by Sopan, Awalin on 5/28/14.
 //  Copyright (c) 2014 __mstr__. All rights reserved.
 //
 
-#import "PNT_AppDelegate.h"
+#import "TexImgAppDelegate.h"
 
-@implementation PNT_AppDelegate
+@implementation TexImgAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-
+   // self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    // Override point for customization after application launch.
+   // self.window.backgroundColor = [UIColor whiteColor];
+   // [self.window makeKeyAndVisible];
     return YES;
 }
 
