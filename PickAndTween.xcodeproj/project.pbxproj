@@ -35,7 +35,6 @@
 		E7E78BA619633ECC00042D12 /* TexImgTweenFunction.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B9319633ECC00042D12 /* TexImgTweenFunction.m */; };
 		E7E78BA719633ECC00042D12 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B9519633ECC00042D12 /* ViewController.m */; };
 		E7E78BAB196343CB00042D12 /* easing-functions.png in Resources */ = {isa = PBXBuildFile; fileRef = E7E78BA8196343CB00042D12 /* easing-functions.png */; };
-		E7E78BAC196343CB00042D12 /* tween.png in Resources */ = {isa = PBXBuildFile; fileRef = E7E78BA9196343CB00042D12 /* tween.png */; };
 		E7E78BAD196343CB00042D12 /* canvas1.png in Resources */ = {isa = PBXBuildFile; fileRef = E7E78BAA196343CB00042D12 /* canvas1.png */; };
 		E7E78BB0196347D000042D12 /* TexImgMainUIController.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78BAF196347D000042D12 /* TexImgMainUIController.m */; };
 /* End PBXBuildFile section */
@@ -97,7 +96,6 @@
 		E7E78B9419633ECC00042D12 /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		E7E78B9519633ECC00042D12 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		E7E78BA8196343CB00042D12 /* easing-functions.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "easing-functions.png"; path = "../../../Desktop/easing-functions.png"; sourceTree = "<group>"; };
-		E7E78BA9196343CB00042D12 /* tween.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = tween.png; path = ../../../Desktop/tween.png; sourceTree = "<group>"; };
 		E7E78BAA196343CB00042D12 /* canvas1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = canvas1.png; path = ../../../Desktop/canvas1.png; sourceTree = "<group>"; };
 		E7E78BAE196347D000042D12 /* TexImgMainUIController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TexImgMainUIController.h; sourceTree = "<group>"; };
 		E7E78BAF196347D000042D12 /* TexImgMainUIController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TexImgMainUIController.m; sourceTree = "<group>"; };
@@ -131,7 +129,6 @@
 			isa = PBXGroup;
 			children = (
 				E7E78BA8196343CB00042D12 /* easing-functions.png */,
-				E7E78BA9196343CB00042D12 /* tween.png */,
 				E7E78BAA196343CB00042D12 /* canvas1.png */,
 				E7E78B4C19633E0F00042D12 /* PickAndTween */,
 				E7E78B7919633ECC00042D12 /* en.lproj */,
@@ -316,7 +313,6 @@
 				E7E78BAB196343CB00042D12 /* easing-functions.png in Resources */,
 				E7E78B9819633ECC00042D12 /* en.lproj in Resources */,
 				E7E78B5919633E0F00042D12 /* Images.xcassets in Resources */,
-				E7E78BAC196343CB00042D12 /* tween.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -553,6 +549,7 @@
 				E7E78B7119633E0F00042D12 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		E7E78B7219633E0F00042D12 /* Build configuration list for PBXNativeTarget "PickAndTweenTests" */ = {
 			isa = XCConfigurationList;
@@ -561,6 +558,7 @@
 				E7E78B7419633E0F00042D12 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

@@ -517,7 +517,7 @@
     /** All the local setup for the ViewController */
     
     self.effect = [[GLKBaseEffect alloc] init];
-    zTranslation = 4.0f;
+    zTranslation = 5.0f;
     taps=0;
     zoomscale = 1;
     
@@ -594,10 +594,16 @@
     glClearColor(0.1, 0.1, 0.1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    
+    float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
+    GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 1.0f, 100.0f);
+    
+    self.effect.transform.projectionMatrix = projectionMatrix;
     GLKMatrix4 modelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -zTranslation);
+   
     modelViewMatrix = GLKMatrix4Multiply(modelViewMatrix, _rotMatrix);
     self.effect.transform.modelviewMatrix = modelViewMatrix;
     self.effect.texture2d0.enabled = YES;
+    
     [self renderSingleFrame];
 }
 

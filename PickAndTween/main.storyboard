@@ -83,7 +83,7 @@
                                     <action selector="openFunctionMenu:" destination="1cy-W9-FIR" eventType="touchUpInside" id="btD-ga-eMe"/>
                                 </connections>
                             </button>
-                            <slider opaque="NO" contentMode="center" fixedFrame="YES" highlighted="YES" selected="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.20000000000000001" minValue="0.10000000000000001" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="ZvP-TG-ARV">
+                            <slider opaque="NO" contentMode="center" fixedFrame="YES" highlighted="YES" selected="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.001" minValue="0.0" maxValue="0.002" translatesAutoresizingMaskIntoConstraints="NO" id="ZvP-TG-ARV">
                                 <rect key="frame" x="546" y="983" width="118" height="31"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="tintColor" red="0.48867384349999998" green="0.63893075909999997" blue="0.84295280610000001" alpha="1" colorSpace="calibratedRGB"/>
