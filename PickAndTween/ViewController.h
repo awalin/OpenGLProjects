@@ -32,10 +32,10 @@ typedef enum {
 
 @property BOOL viewChanged;
 @property ViewType* viewType;
-@property CustomPlane *planes; // array of the planes
+@property CustomPlane *locations; // array of the planes
 
 @property NSMutableArray* tweens;
-@property NSMutableArray* allPlanes;
+@property NSMutableArray* allLocations;
 
 @property double latMx;
 @property double longMx;
@@ -50,7 +50,7 @@ typedef enum {
 @property (strong, nonatomic) UIWindow *window;
 -(void) setDuration:(float) val;
 -(void) setDelay:(float) val;
--(void) makePlanes;
+-(void) makePlane;
 -(void) makeGlobe;
 -(void) resetView;
 -(void) changeView:(ViewType*)viewType;

@@ -53,7 +53,7 @@
 
 -(float) bounceinout{
 
-    if(time<duration/2){
+    if(time < duration/2){
         ratio = time*2/duration;
         return 0.5*[self bouncein];
     }else {
@@ -64,8 +64,8 @@
 }
 
 -(float) bouncein{
-    ratio = duration-time;
-    return -[self bounceout];
+    ratio = (duration-time)/duration;
+    return 1-[self bounceout];
 }
 
 -(float) bounceout {

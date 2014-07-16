@@ -28,6 +28,4 @@
 -(void) setClearColourRed:(float) r green:(float) g blue:(float) b alpha:(float) a;
 -(void) drawWithMode:(GLuint) mode;
 
--(void) drawInFrmeBuffer:(GLuint) mode;
-
 @end
