@@ -223,7 +223,7 @@
     // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
     GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/cols); // 0 to 360, azimuthal, 14.
     
-    float theta = GLKMathDegreesToRadians(180.0f);
+    float theta = GLKMathDegreesToRadians(180.0f) - eachTheta/2 ;
     
     for(int i=0; i< rows; i++){ // fixed phi
         
@@ -317,7 +317,6 @@
            
         index = 6*(cols*i+j);
         for(int t =0; t < 6; t++){
-               self.locations[index+t].positionCoords = location.vertices[t];
                self.locations[index+t].textureCoords = location.texCoord[t];
                self.locations[index+t].colorCoords = location.colors[t];
             }
@@ -379,57 +378,72 @@
 -(void) makeGlobe{
     
     GLKVector3 vrtx;
+    
+    GLfloat eachTheta = GLKMathDegreesToRadians(180.0f/rows);
+    // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
+    GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/cols); // 0 to 360, azimuthal, 14.
+    
   //the first location is on the BL corner of the screen
     for(int i=0; i< rows; i++){ // fixed phi
         int j;
         for( j =0; j < cols; j++) { // fixed theta
             TexImgPlane* location = [self.allLocations objectAtIndex:(cols*i+j)];
-            
-            GLfloat x = radius*sin(location.theta)*cos(location.phi);
-            GLfloat y = radius*sin(location.theta)*sin(location.phi);
-            GLfloat z = radius*cos(location.theta);
-            
-            GLKMatrix3 rot = GLKMatrix3MakeXRotation((M_PI+ M_PI_2 + location.theta ) );
-            rot = GLKMatrix3Multiply(GLKMatrix3MakeYRotation( location.phi), rot);
-            
-            location.center = GLKVector3Make( y, z, x );
-            GLKVector3 c = GLKVector3Make( 0, 0, 0 );
-            
+            float phi = location.phi- eachPhi/2; // j*eachPhi;
+            float theta = location.theta - eachTheta/2;
+        
             //BL
-            vrtx = GLKVector3Make(c.x - location.width/2,  c.y- location.height/2 ,  c.z );
-            vrtx =  GLKMatrix3MultiplyVector3(rot, vrtx);
-            vrtx = GLKVector3Add(vrtx, location.center);
+            GLfloat x = radius*sin(theta)*cos(phi);
+            GLfloat y = radius*sin(theta)*sin(phi);
+            GLfloat z = radius*cos(theta);
+            vrtx = GLKVector3Make(y, z, x);
             location.vertices[0] = vrtx;
             
+        
             //BR
-            vrtx = GLKVector3Make(c.x + location.width/2,  c.y- location.height/2 ,  c.z );
-            vrtx =  GLKMatrix3MultiplyVector3(rot, vrtx);
-            vrtx = GLKVector3Add(vrtx, location.center);
+            phi = location.phi + eachPhi/2; // j*eachPhi;
+            theta = location.theta - eachTheta/2;
+            x = radius*sin(theta)*cos(phi);
+            y = radius*sin(theta)*sin(phi);
+            z = radius*cos(theta);
+            vrtx = GLKVector3Make(y, z, x);
             location.vertices[1] = vrtx;
             
+            
             //TL
-            vrtx = GLKVector3Make(c.x - location.width/2,  c.y + location.height/2 ,  c.z);
-            vrtx =  GLKMatrix3MultiplyVector3(rot, vrtx);
-            vrtx = GLKVector3Add(vrtx, location.center);
+            phi = location.phi - eachPhi/2; // j*eachPhi;
+            theta = location.theta + eachTheta/2;
+            x = radius*sin(theta)*cos(phi);
+            y = radius*sin(theta)*sin(phi);
+            z = radius*cos(theta);
+            vrtx = GLKVector3Make(y, z, x);
             location.vertices[2] = vrtx;
             
             //TR
-            vrtx = GLKVector3Make(c.x + location.width/2,  c.y + location.height/2 ,  c.z );
-            vrtx =  GLKMatrix3MultiplyVector3(rot, vrtx);
-            vrtx = GLKVector3Add(vrtx, location.center);
+            phi = location.phi + eachPhi/2; // j*eachPhi;
+            theta = location.theta + eachTheta/2;
+            x = radius*sin(theta)*cos(phi);
+            y = radius*sin(theta)*sin(phi);
+            z = radius*cos(theta);
+            vrtx = GLKVector3Make(y, z, x);
             location.vertices[3] = vrtx;
             
             ///two more
             //BR
-            vrtx = GLKVector3Make( c.x + location.width/2,  c.y - location.height/2 ,  c.z );
-            vrtx = GLKMatrix3MultiplyVector3(rot, vrtx);
-            vrtx = GLKVector3Add(vrtx, location.center);
+            phi = location.phi + eachPhi/2; // j*eachPhi;
+            theta = location.theta - eachTheta/2;
+            x = radius*sin(theta)*cos(phi);
+            y = radius*sin(theta)*sin(phi);
+            z = radius*cos(theta);
+            vrtx = GLKVector3Make(y, z, x);
             location.vertices[4] = vrtx;
             
             //TL
-            vrtx = GLKVector3Make(c.x - location.width/2,  c.y + eachHeight/2 ,  c.z ) ;
-            vrtx =  GLKMatrix3MultiplyVector3(rot, vrtx);
-            vrtx = GLKVector3Add(vrtx, location.center);
+            phi = location.phi - eachPhi/2; // j*eachPhi;
+            theta = location.theta + eachTheta/2;
+            x = radius*sin(theta)*cos(phi);
+            y = radius*sin(theta)*sin(phi);
+            z = radius*cos(theta);
+            vrtx = GLKVector3Make(y, z, x);
             location.vertices[5] = vrtx;
         }
     }
@@ -542,8 +556,8 @@
     self.effect.texture2d0.name = info.name;
     self.shapes = [NSMutableArray array];
    
-  [self makePlane];
-//    [self makeGlobe];
+//  [self makePlane];
+    [self makeGlobe];
     
 	GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
     drawObject.mode = GL_TRIANGLES;
