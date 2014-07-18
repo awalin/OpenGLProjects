@@ -37,6 +37,12 @@
     glDrawArrays(mode, 0, self.numOfVerticesToDraw);
     }
 
+-(void) drawWithElements:(GLuint) mode{
+    
+    glBindVertexArrayOES( self.VAO.glName );
+//    glDrawElements(GL_TRIANGLE_STRIP, sizeof(indices)/sizeof(GLubyte), GL_UNSIGNED_BYTE, (void*)0);
+}
+
 
 
 -(void) setClearColourRed:(float) r green:(float) g blue:(float) b alpha:(float) a

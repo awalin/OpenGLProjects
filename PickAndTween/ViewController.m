@@ -7,9 +7,10 @@
 #import "GLKVAObject.h"
 #import "GLK2BufferObject.h"
 #import "TexImgPlane.h"
+#import "PNT_EarthPoint.h"
 #import "TexImgTween.h"
 #import "TexImgTweenFunction.h"
-#import "TexImgFrameBuffer.h"
+
 
 
 @implementation ViewController {
@@ -24,12 +25,18 @@
     BOOL touchEnded;
     // modelView properties
     GLfloat zoomscale;
-    GLKVector3 modeltranslation;
+    GLKVector3 modelTranslation;
     GLKVector3 modelrotation;
+    GLKVector3 currentRotation;
     GLKMatrix4 _rotMatrix;
     GLfloat zTranslation;
     NSTimeInterval _duration;
     NSTimeInterval delay;
+    GLushort *meshIndices;
+    int total;
+    int totalPoints;
+    
+    
     int rows;
     int cols;
     float radius;
@@ -41,16 +48,12 @@
     GLfloat eachHeight;
     BOOL resetCalled;
     
-    NSTimeInterval totalTimeElapsed;
-    NSTimeInterval durationRemaining;
-    TexImgTweenFunction* tweenFunction;
+    GLuint _locationVertexBuffer;
+    GLuint _locationTextureBuffer;
+    GLuint _locationColorBuffer;
+    GLuint _planeIndiciesBuffer;
     
-    BOOL pickingMode;
-    GLuint pickFBO;
-    GLuint glVertexAttributeBufferID;
-    GLuint glColorAttributeBufferID;
-    int currentTween;
-    int prevTween;
+    TexImgTweenFunction* tweenFunction;
     
 }
 
@@ -76,38 +79,39 @@
     view.drawableDepthFormat = GLKViewDrawableDepthFormat24;
     //To enable multisamle, it needs to be compiled as iPad, not univresal device.
     view.drawableMultisample = GLKViewDrawableMultisample4X;
-
     
-	[view bindDrawable];
-    rows= 100;
-    cols= 100;
-	
-    int total = rows*cols*6;
-    self.locations = (CustomPlane*) malloc(total*sizeof(CustomPlane));
+    [view bindDrawable];
+    rows = 100;
+    cols = 100;
+	totalPoints = cols*rows;
+    total = totalPoints*6;
+    self.locations = (CustomPoint*) malloc(total*sizeof(CustomPoint));
     self.allLocations = [[NSMutableArray alloc] initWithCapacity:rows*cols];
-    self.tweens = [[NSMutableArray alloc] initWithCapacity:500];
-    self.shapes = [[NSMutableArray alloc] init];
-    pickingMode =NO;
+    self.tweens = [[NSMutableArray alloc] initWithCapacity:rows*cols];
+    
+    meshIndices = (GLushort*)malloc(total*sizeof(GLushort));
+    
     delay=0.0;
     touchEnded = NO;
     friction = 0.90;
     _duration = 2.0;
-    durationRemaining = _duration;
     velocity = GLKVector3Make(0,0,0);
     zoomscale = 1.0;
     
     radius = 1;
     resetCalled = NO;
-    tweenFunction= [[TexImgTweenFunction alloc] init];
-    prevTween=-1;
-    currentTween=-1;
     
-    spanX = 2.0;
-    offsetX = -1.0;
+    tweenFunction  =  [[TexImgTweenFunction alloc] init];
     
-    spanY = 2.0f;//rect.size.height;// 2.0;
+    
+    UIImage *texImage = [UIImage imageNamed:@"earth-map.png"];
+    float imageAspect = texImage.size.width/texImage.size.height;
+    //    NSLog(@"%f", imageAspect);
+    
+    spanX = 2.0*imageAspect;
+    offsetX = -1.0*imageAspect;
+    spanY = 2.0f;
     offsetY = -1.0f;
-    // (u, v) is the centre of the texture
     eachWidth = spanX/cols;
     eachHeight = spanY/rows;
     /////////rotation and jesture //////
@@ -122,84 +126,35 @@
     
     self.pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(zoomWithPinchGesture:)];
     [self.view addGestureRecognizer:self.pinchRecognizer];
-
+    
     [self initData];
     [self setupGL];
-    totalTimeElapsed= 0.0;
 }
 
-
+//initial values
 -(void) makePlane{
-    
-    GLfloat s=0.0,t=0.0;
-    GLfloat y = offsetY+ eachHeight/2;
-  //the first location is on the BL corner of the screen
-    for(int i=0; i< rows; i++){ // fixed phi
-    
-      GLfloat x = offsetX + eachWidth/2;
-      for(int j =0; j < cols; j++) { // fixed theta
- 
-        TexImgPlane* location = [self.allLocations objectAtIndex:(cols*i+j)];    //Position
-          
-        //BL
-          s =  x - location.width/2 ;
-          t =  y - location.height/2;
-          GLKVector3 vrtx = GLKVector3Make(s, t, 0);
-          location.vertices[0] = vrtx;
-          
-        //BR
-          s =  x + location.width/2 ;//s+eachRow;
-          t =  y -location.height/2;  //t;
-          vrtx = GLKVector3Make(s, t, 0);
-          location.vertices[1] = vrtx;
-          
-            
-        //TL
-          s =  x - location.width/2 ;//s+eachRow;
-          t =  y + location.height/2;  //t;
-          vrtx = GLKVector3Make(s, t, 0); // base
-          location.vertices[2] = vrtx;
-            
-            
-        //TR
-          s =  x+ location.width/2 ;//s+eachRow;
-          t =  y+ location.height/2;  //t;
-          vrtx =  GLKVector3Make(s, t, 0); // base
-          location.vertices[3] = vrtx;
-            
-      //two more
-        //BR
-          s =  x+ location.width/2 ;//s+eachRow;
-          t = y - location.height/2;  //t;
-          vrtx = GLKVector3Make(s, t, 0); // base
-          location.vertices[4] = vrtx;
-            
-        //TL
-          s =  x - eachWidth/2 ;//s+eachRow;
-          t = y + eachHeight/2;  //t;
-          vrtx = GLKVector3Make(s, t, 0); // base
-          location.vertices[5] = vrtx;
-          
-        //end of vertex creation
-          x = x + location.width;
-        }
-        y = y + eachHeight;
+    for(int index=0; index<totalPoints; index++) { // fixed theta
+        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
+        location.center = location.flatLoc;
+        self.locations[index].positionCoords = location.center;
     }
     
-    
-    for(int i=0; i< rows; i++){
-       for(int j =0; j < cols; j++) {
-           int index = (cols*i+j);
-           TexImgPlane* location = [self.allLocations objectAtIndex:index];
-           index = 6*(cols*i+j);
-           for(int t =0; t < 6; t++){
-               self.locations[index+t].positionCoords = location.vertices[t];
-               self.locations[index+t].textureCoords = location.texCoord[t];
-               self.locations[index+t].colorCoords = location.colors[t];
-           }
-      }
-    }
 }
+
+/*
+ This is dynamic part
+ */
+
+-(void) makeGlobe {
+    //the first location is on the BL corner of the screen
+    for(int index=0; index<totalPoints; index++) { // fixed theta
+        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
+        location.center = location.roundLoc;
+        self.locations[index].positionCoords = location.center;
+    }
+    
+}
+
 
 //This is static part//
 -(void) initData{
@@ -223,135 +178,130 @@
     // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
     GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/cols); // 0 to 360, azimuthal, 14.
     
-    float theta = GLKMathDegreesToRadians(180.0f) - eachTheta/2 ;
+    float theta = GLKMathDegreesToRadians(180.0f) ;
     
     for(int i=0; i< rows; i++){ // fixed phi
         
-       GLfloat x = offsetX + 0.0;
-       float phi = GLKMathDegreesToRadians(-180.0f); // j*eachPhi;
+        GLfloat x = offsetX + 0.0;
+        float phi = GLKMathDegreesToRadians(-180.0f) ; // j*eachPhi;
         
-       u = offsetTX + 0.0; // center x of texture
-       int j;
-       for( j =0; j < cols; j++) { // fixed theta
-           
-        TexImgPlane* location = [[TexImgPlane alloc] init];
-        int index = (cols*i+j);
-        location.theta = theta;
-        location.planeId= index;
-        location.phi = phi;
-        location.row = i;
-        location.col = j;
-           
-        TexImgTween* tween = [[TexImgTween alloc] init];
-        tween.planeId = index;
-        tween.targetPhi = phi;
-        tween.targetTheta = theta;
-        tween.plane = location;
+        u = offsetTX + 0.0; // center x of texture
+        int j;
+        for( j =0; j < cols; j++) { // fixed theta
             
-        GLfloat x1 = radius*sin(location.theta)*cos(location.phi);
-        GLfloat y1 = radius*sin(location.theta)*sin(location.phi);
-        GLfloat z1 = radius*cos(location.theta);
-         
-        tween.globeCenter = GLKVector3Make( y1, z1, x1 );
-        tween.wallCenter =  GLKVector3Make(x,y,0);
-        tween.duration = _duration;
-           
-        location.height = eachHeight;
-        location.width = eachWidth;
+            PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
+            int index = (cols*i+j);
+            location.theta = theta;
+            location.planeId= index;
+            location.phi = phi;
+            location.row = i;
+            location.col = j;
             
-            //Texture
-            //BL (0,0)
-        s = u - eachWidthT/2;
-            t = v - eachHeightT/2;
+            TexImgTween* tween = [[TexImgTween alloc] init];
+            tween.planeId = index;
+            tween.targetPhi = phi;
+            tween.targetTheta = theta;
+            
+            GLfloat x1 = radius*sin(location.theta)*cos(location.phi);
+            GLfloat y1 = radius*sin(location.theta)*sin(location.phi);
+            GLfloat z1 = radius*cos(location.theta);
+            
+            location.flatLoc = GLKVector3Make(x,y,0);
+            location.roundLoc = GLKVector3Make( y1, z1, x1 );
+            
+            tween.globeCenter = location.roundLoc;
+            tween.wallCenter =  location.roundLoc;
+            tween.duration = _duration;
+            
+            location.height = eachHeight;
+            location.width = eachWidth;
+            
+            //texture
+            s = u ;
+            t = v ;
             txtr = GLKVector2Make(s, t); // BL (0,0)
-            location.texCoord[0] = txtr;
+            location.texCoord = txtr;
             
-            //BR (1,0)
-        s = u + eachWidthT/2;
-            t = v - eachHeightT/2;
-            txtr = GLKVector2Make(s, t); // BR
-            location.texCoord[1] = txtr;
+            phi = phi + eachPhi;
+            u = u + eachWidthT;
+            x = x + eachWidth;
             
-            //TL (0,1)
-        s = u - eachWidthT/2;
-            t = v + eachHeightT/2;
-            txtr = GLKVector2Make(s, t); // TL
-            location.texCoord[2] = txtr;
+            int colorId = index+1;
             
-            //TR
-        s = u + eachWidthT/2;
-            t = v + eachHeightT/2;
-            txtr = GLKVector2Make(s, t); // TR
-            location.texCoord[3] = txtr;
+            
+			int red = colorId % 255;
+			int green = colorId>= 255 ? (colorId/255)%255 : 0;
+			int blue = colorId>=255*255 ? (colorId/255)/255 : 0;
+			GLKVector4 colorV  = GLKVector4Make(red/255.0f, green/255.0f, blue/255.0f, 1);
+            
+            self.locations[index].textureCoords = location.texCoord;
+            self.locations[index].colorCoords = colorV;
+            
+            [self.allLocations insertObject:location atIndex:index];
+            [self.tweens insertObject:tween atIndex:index];
+            
 
-        //two more
-            //BR (1,0)
-        s = u + eachWidthT/2;
-            t = v - eachHeightT/2;
-            txtr = GLKVector2Make(s, t); // BR
-            location.texCoord[4] = txtr;
             
-        //TL (0,1)
-        s = u - eachWidthT/2;
-            t = v + eachHeightT/2;
-            txtr = GLKVector2Make(s, t); // TL
-            location.texCoord[5] = txtr;
-           
-        location.colorId = index;
-        //Colors
-        GLKVector4 colorV =  GLKVector4Make((i+0.0f)/rows, (j+0.0f)/cols, 0.0, 1.0);//white color
-//        NSLog(@"%f %f %f", colorV.x, colorV.y, colorV.z);
-        location.colors[0]= colorV;
-        location.colors[1]= colorV;
-        location.colors[2]= colorV;
-        location.colors[3]= colorV;
-        location.colors[4]= colorV;
-        location.colors[5]= colorV;
-           
-        [self.allLocations insertObject:location atIndex:(cols*i+j)];
-        [self.tweens insertObject:tween atIndex:(cols*i+j)];
-            
-        phi = phi + eachPhi;
-        u = u + eachWidthT;
-        x = x + eachWidth;
-           
-        index = 6*(cols*i+j);
-        for(int t =0; t < 6; t++){
-               self.locations[index+t].textureCoords = location.texCoord[t];
-               self.locations[index+t].colorCoords = location.colors[t];
-            }
+        }
+        v = v + eachHeightT;
+        y = y + eachHeight;
+        theta = theta - eachTheta;
     }
-    v = v + eachHeightT;
-    y = y + eachHeight;
-    theta = theta - eachTheta;
-  }
-
+    
+    
+    int count=0;
+    
+    for(int i=0; i< rows; i++){ // fixed phi
+        int j;
+        for( j =0; j < cols; j++) { // fixed theta
+            //BL
+            meshIndices[count++] = (cols*i)+j;
+            //BR
+            meshIndices[count++] = (cols*i)+(j+1);
+            //TL
+            meshIndices[count++] = (cols*(i+1))+j;
+            //TR
+            meshIndices[count++] = (cols*(i+1))+(j+1);
+            
+            meshIndices[count++] = (cols*i)+(j+1);
+            
+            meshIndices[count++] = (cols*(i+1))+j;
+        }
+    }
+    
+    NSLog(@"count %d", count);
+    
     
 }
 
--(void) changeView:(ViewType*)viewType{
+-(IBAction) changeViewType:(id)sender {
+    int i = [sender selectedSegmentIndex];
+    if (i== GLOBE){
+        [self changeView: GLOBE];
+    }
+    else if(i== WALL) {
+        [self changeView: WALL];
+    }
+}
+
+-(void) changeView:(ViewType)viewType{
+    
     self.viewType = viewType;
     self.viewChanged=YES;
-    totalTimeElapsed=0.0;
-//    durationRemaining = _duration;
-    
-    for(int i=0; i< rows; i++){
-        for(int j =0; j < cols; j++) {
-            int index = (cols*i+j);
-            TexImgTween* tween = [self.tweens objectAtIndex:index];
-            if(self.viewType==GLOBE){
-                [[self.tweens objectAtIndex:index] setTargetCenter: tween.globeCenter];
-                [[self.tweens objectAtIndex:index] setSourceCenter: tween.wallCenter];
-            } else if(self.viewType==WALL){
-                [[self.tweens objectAtIndex:index] setTargetCenter: tween.wallCenter];
-                [[self.tweens objectAtIndex:index] setSourceCenter: tween.globeCenter];
-                tween.targetPhi = 0 ;
-                tween.targetTheta = 0;
-            } else if(self.viewType==RESET){
-                [self resetView];
-                self.viewChanged=NO;
-                return;
-            }
+    NSLog(@"inside change view ");
+    NSDate* currentTime = [NSDate date];
+    int t=rows*cols;
+    for(int index=0; index<t; index++){
+        TexImgTween* tween = [self.tweens objectAtIndex:index];
+        PNT_EarthPoint* plane = [self.allLocations objectAtIndex:index];
+        tween.startTime = currentTime;
+        //        NSLog(@"twn start time %@", tween.startTime);
+        if(self.viewType==GLOBE){
+            [[self.tweens objectAtIndex:index] setTargetCenter: plane.roundLoc];
+            [[self.tweens objectAtIndex:index] setSourceCenter: plane.flatLoc];
+        } else if(self.viewType==WALL){
+            [[self.tweens objectAtIndex:index] setTargetCenter: plane.flatLoc];
+            [[self.tweens objectAtIndex:index] setSourceCenter: plane.roundLoc];
         }
     }
     
@@ -361,171 +311,9 @@
     _duration = val;
     self.viewChanged=NO;
     
-    for(int i=0; i< rows; i++){
-        for(int j =0; j < cols; j++) {
-            int index = (cols*i+j);
-            TexImgTween* tween = [self.tweens objectAtIndex:index];
-            tween.duration = _duration;
-        }
-    }
     self.viewChanged = YES;
 }
 
-/*
- This is dynamic part
- */
-
--(void) makeGlobe{
-    
-    GLKVector3 vrtx;
-    
-    GLfloat eachTheta = GLKMathDegreesToRadians(180.0f/rows);
-    // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
-    GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/cols); // 0 to 360, azimuthal, 14.
-    
-  //the first location is on the BL corner of the screen
-    for(int i=0; i< rows; i++){ // fixed phi
-        int j;
-        for( j =0; j < cols; j++) { // fixed theta
-            TexImgPlane* location = [self.allLocations objectAtIndex:(cols*i+j)];
-            float phi = location.phi- eachPhi/2; // j*eachPhi;
-            float theta = location.theta - eachTheta/2;
-        
-            //BL
-            GLfloat x = radius*sin(theta)*cos(phi);
-            GLfloat y = radius*sin(theta)*sin(phi);
-            GLfloat z = radius*cos(theta);
-            vrtx = GLKVector3Make(y, z, x);
-            location.vertices[0] = vrtx;
-            
-        
-            //BR
-            phi = location.phi + eachPhi/2; // j*eachPhi;
-            theta = location.theta - eachTheta/2;
-            x = radius*sin(theta)*cos(phi);
-            y = radius*sin(theta)*sin(phi);
-            z = radius*cos(theta);
-            vrtx = GLKVector3Make(y, z, x);
-            location.vertices[1] = vrtx;
-            
-            
-            //TL
-            phi = location.phi - eachPhi/2; // j*eachPhi;
-            theta = location.theta + eachTheta/2;
-            x = radius*sin(theta)*cos(phi);
-            y = radius*sin(theta)*sin(phi);
-            z = radius*cos(theta);
-            vrtx = GLKVector3Make(y, z, x);
-            location.vertices[2] = vrtx;
-            
-            //TR
-            phi = location.phi + eachPhi/2; // j*eachPhi;
-            theta = location.theta + eachTheta/2;
-            x = radius*sin(theta)*cos(phi);
-            y = radius*sin(theta)*sin(phi);
-            z = radius*cos(theta);
-            vrtx = GLKVector3Make(y, z, x);
-            location.vertices[3] = vrtx;
-            
-            ///two more
-            //BR
-            phi = location.phi + eachPhi/2; // j*eachPhi;
-            theta = location.theta - eachTheta/2;
-            x = radius*sin(theta)*cos(phi);
-            y = radius*sin(theta)*sin(phi);
-            z = radius*cos(theta);
-            vrtx = GLKVector3Make(y, z, x);
-            location.vertices[4] = vrtx;
-            
-            //TL
-            phi = location.phi - eachPhi/2; // j*eachPhi;
-            theta = location.theta + eachTheta/2;
-            x = radius*sin(theta)*cos(phi);
-            y = radius*sin(theta)*sin(phi);
-            z = radius*cos(theta);
-            vrtx = GLKVector3Make(y, z, x);
-            location.vertices[5] = vrtx;
-        }
-    }
-    
-    
-    for(int i=0; i< rows; i++){
-        for(int j =0; j < cols; j++) {
-            int index = (cols*i+j);
-            TexImgPlane* location = [self.allLocations objectAtIndex:index];
-            index = 6*(cols*i+j);
-            for(int t =0; t < 6; t++){
-                self.locations[index+t].positionCoords = location.vertices[t];
-                self.locations[index+t].textureCoords = location.texCoord[t];
-                self.locations[index+t].colorCoords = location.colors[t];
-                
-            }
-        }
-        
-    }
-    
-}
-
--(void) setTweenFunction:(NSString*) function{
-    NSLog(@"%@", function);
-    tweenFunction.selectedFunction=function;
-
-}
-//call animate from the update function
-
--(void) tweenView{
-
-    if(currentTween<0){
-        return;
-    }
-    //first deal with prev tween, take it back to the wall
-    if(prevTween>-1){
-        NSTimeInterval timeElapsed = [self timeSinceLastUpdate];
-        
-        
-        
-        int index = prevTween;
-        TexImgPlane* location = [self.allLocations objectAtIndex:index];
-        TexImgTween* tween = [self.tweens objectAtIndex:index];
-        durationRemaining = tween.duration - totalTimeElapsed;
-        float ratio = timeElapsed/durationRemaining;
-        ratio = [tweenFunction calculateTweenWithTime:timeElapsed duration:durationRemaining];
-
-        
-        [location updateVertices:tween.targetCenter
-                 sourceCEnter:tween.sourceCenter
-                         mode:self.viewType
-                  timeElapsed:timeElapsed
-                     duration:durationRemaining
-                        ratio:ratio];
-        index = index*6;
-        for(int t =0; t < 6; t++){
-            self.locations[index+t].positionCoords = location.vertices[t];
-           }
-     
-    
-    }
-    //then deal with current tween
-    NSTimeInterval timeElapsed = [self timeSinceLastUpdate];
-    int index = currentTween;
-    TexImgPlane* location = [self.allLocations objectAtIndex:index];
-    TexImgTween* tween = [self.tweens objectAtIndex:index];
-    durationRemaining = tween.duration - totalTimeElapsed;
-    float ratio = timeElapsed/durationRemaining;
-    ratio = [tweenFunction calculateTweenWithTime:timeElapsed duration:durationRemaining];
-            
-    [location updateVertices:tween.targetCenter
-                    sourceCEnter:tween.sourceCenter
-                             mode:self.viewType
-                      timeElapsed:timeElapsed
-                         duration:durationRemaining
-                           ratio:ratio];
-    index = index*6;
-    for(int t =0; t < 6; t++){
-            self.locations[index+t].positionCoords = location.vertices[t];
-    }
-    totalTimeElapsed  += timeElapsed;
-}
 
 
 -(void)setupGL{
@@ -536,8 +324,11 @@
     zTranslation = 5.0f;
     taps=0;
     zoomscale = 1;
+    modelTranslation = GLKVector3Make(0.0, 0.0, zTranslation);
+    modelrotation = GLKVector3Make(0, 0, 0);
+    currentRotation = GLKVector3Make(0, 0, 0);
     
-    float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
+    float aspect = fabsf(self.view.bounds.size.width/self.view.bounds.size.height);
     GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 1.0f, 100.0f);
     self.effect.transform.projectionMatrix = projectionMatrix;
     glEnable(GL_DEPTH_TEST);
@@ -548,46 +339,38 @@
                               nil];
     NSError * error;
     NSString *path = [[NSBundle mainBundle] pathForResource:@"earth-map" ofType:@"png"];
-    
     info = [GLKTextureLoader textureWithContentsOfFile:path options:options error:&error];
     if (info == nil) {
         NSLog(@"Error loading file: %@", [error localizedDescription]);
     }
     self.effect.texture2d0.name = info.name;
-    self.shapes = [NSMutableArray array];
-   
-//  [self makePlane];
-    [self makeGlobe];
+    [self makePlane];
+    //[self makeGlobe];
     
-	GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
-    drawObject.mode = GL_TRIANGLES;
+    glGenBuffers(1, &_locationVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_DYNAMIC_DRAW);
     
-    drawObject.numOfVerticesToDraw = rows*cols*6;
-    drawObject.VAO = [[GLKVAObject alloc] init];
+	
+    glGenBuffers(1, &_locationTextureBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, _locationTextureBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_STATIC_DRAW);
     
-    [drawObject.VAO addVBOForAttribute:GLKVertexAttribPosition
-                        filledWithData:self.locations //addres of the bytes to copy
-                           numVertices:drawObject.numOfVerticesToDraw
-                           numOfFloats:3 //floats in GLKVector3
-                                stride:sizeof(CustomPlane)
-                                offset:(void *)offsetof(CustomPlane, positionCoords)];
+    glGenBuffers(1, &_locationColorBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, _locationColorBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_STATIC_DRAW);
 
+	
+    glGenBuffers(1, &_planeIndiciesBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _planeIndiciesBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort)*total, meshIndices, GL_STATIC_DRAW);
     
-    [drawObject.VAO addVBOForAttribute:GLKVertexAttribTexCoord0
-                        filledWithData:self.locations //addres of the bytes to copy
-                           numVertices:drawObject.numOfVerticesToDraw
-                           numOfFloats:2
-                                stride:sizeof(CustomPlane)
-                                offset:(void *)offsetof(CustomPlane, textureCoords) ];
     
- 
-    [self.shapes addObject: drawObject];
-   
 }
 
 
 -(void) setDelay:(float) val {
-
+    
     delay = val;
 }
 
@@ -598,10 +381,39 @@
     _rotMatrix = GLKMatrix4Identity;
     velocity = GLKVector3Make(0, 0, 0);
     touchEnded = YES;
-    prevTween = currentTween;
-    totalTimeElapsed = _duration;
-
+    
 }
+
+-(void) animateView{
+    if(self.viewChanged==NO){
+        return;
+    }
+    
+    NSTimeInterval timeElapsedSinceLastUpdate = [self timeSinceLastUpdate];
+    NSTimeInterval durationRemaining;
+    
+    //    NSLog(@"inside animation");
+    int t = rows*cols;
+    for(int index =0; index < t; index++){
+        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
+        TexImgTween* tween = [self.tweens objectAtIndex:index];
+        float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
+        durationRemaining = _duration - timePassedSinceStart;
+        float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
+        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
+        
+        [location updateVertex:tween.targetCenter
+                          mode:self.viewType
+                   timeElapsed: timePassedSinceStart//timeElapsedSinceLastUpdate
+                      duration: _duration //durationRemaining
+                         ratio:ratio];
+        
+        self.locations[index].positionCoords = location.center;
+        
+    }
+    
+}
+
 
 /*called after update loop
  */
@@ -610,62 +422,43 @@
     
     glClearColor(0.1, 0.1, 0.1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-   
-    float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
-    GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 1.0f, 100.0f);
     
+    float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
+    GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 0.001f, 100.0f);
     self.effect.transform.projectionMatrix = projectionMatrix;
-    GLKMatrix4 modelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -zTranslation);
-   
-    modelViewMatrix = GLKMatrix4Multiply(modelViewMatrix, _rotMatrix);
+    
+    GLKMatrix4 baseModelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -modelTranslation.z);
+	GLKMatrix4 rotymatrix   = GLKMatrix4MakeYRotation(modelrotation.y);
+	GLKMatrix4 rotxmatrix  = GLKMatrix4MakeXRotation(modelrotation.x);
+	GLKMatrix4 modelViewMatrix = rotxmatrix;
+	modelViewMatrix = GLKMatrix4Multiply(modelViewMatrix, rotymatrix);
+	modelViewMatrix = GLKMatrix4Multiply(baseModelViewMatrix, modelViewMatrix);
     self.effect.transform.modelviewMatrix = modelViewMatrix;
+    
     self.effect.texture2d0.enabled = YES;
     
     [self renderSingleFrame];
 }
 
+
 -(void) update {
     
-   float velocityLength = GLKVector3Length(velocity);
-    //change the vertex positions here for animation
-    GLK2DrawCall* drawObject = [self.shapes objectAtIndex:0];
-   
-    if(resetCalled){
-        _rotMatrix = GLKMatrix4Identity;
-        resetCalled = NO;
-        return;
-    }
-
-    if(currentTween>=0) {
-        [self tweenView];
+    if(self.viewChanged) {
         
-        [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
-                               filledWithData:self.locations //addres of the bytes to copy
-                                  numVertices:drawObject.numOfVerticesToDraw
-                                  numOfFloats:3 //floats in GLKVector3
-                                       stride:sizeof(CustomPlane)
-                                       offset:(void *)offsetof(CustomPlane, positionCoords)];
-      
+        [self animateView];// changes the points
+        
+        glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_DYNAMIC_DRAW);
+        
     }
-    if(touchEnded && velocityLength>0.01){
-        float rotX = GLKMathDegreesToRadians(velocity.y );
-        float rotY = GLKMathDegreesToRadians(velocity.x );
-        bool isInvertible;
-        //inverting to get the world coordinate in order to get the correct axis of rotation
-        GLKVector3 xAxis = GLKMatrix4MultiplyVector3(GLKMatrix4Invert(_rotMatrix, &isInvertible),
-                                                 GLKVector3Make(1, 0, 0));
-        _rotMatrix = GLKMatrix4Rotate(_rotMatrix, rotX, xAxis.x, xAxis.y, xAxis.z);
-    
-    
-        GLKVector3 yAxis = GLKMatrix4MultiplyVector3(GLKMatrix4Invert(_rotMatrix, &isInvertible),
-                                                 GLKVector3Make(0, 1, 0));
-        _rotMatrix = GLKMatrix4Rotate(_rotMatrix, rotY, yAxis.x, yAxis.y, yAxis.z);
-    
-        velocity.y = velocity.y * friction;
-        velocity.x = velocity.x * friction;
-
+    if(self.viewType==GLOBE)
+        modelrotation.y -= 0.2;
+    else {
+        modelrotation.y= 0;
     }
+    
 }
+
 
 -(void) renderSingleFrame {
     
@@ -674,28 +467,50 @@
 		NSLog(@"We have no gl context; skipping all frame rendering");
 		return;
 	}
-    if( self.shapes == nil || self.shapes.count < 1 ){
-		NSLog(@"no drawcalls specified; rendering nothing");
-        return;
-    }
-    //        [self.drawCalls makeObjectsPerformSelector:@selector(renderInScene:) withObject:self];
     
-    for( GLK2DrawCall* drawCall in self.shapes ){
-        //loop throug the different images
-
-        if( drawCall.VAO != nil ){
-                [self.effect prepareToDraw];
-                [drawCall drawWithMode:GL_TRIANGLES];
-        }
-        else {
-            NSLog(@"not available");
-        }
-     }
+    
+    
+    [self.effect prepareToDraw];
+    
+    
+//    glDisableVertexAttribArray(GLKVertexAttribColor);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
+    glEnableVertexAttribArray(GLKVertexAttribPosition);
+    glVertexAttribPointer(GLKVertexAttribPosition,
+                          3,
+                          GL_FLOAT, GL_FALSE,
+                          sizeof(CustomPoint),
+                          (void *)offsetof(CustomPoint, positionCoords));
+    
+    glBindBuffer(GL_ARRAY_BUFFER, _locationTextureBuffer);
+    glEnableVertexAttribArray(GLKVertexAttribTexCoord0);
+    glVertexAttribPointer(GLKVertexAttribTexCoord0,
+                          2,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(CustomPoint) ,
+                          (void *)offsetof(CustomPoint, textureCoords));
+    
+    glBindBuffer(GL_ARRAY_BUFFER, _locationColorBuffer);
+    glEnableVertexAttribArray(GLKVertexAttribColor);
+    glVertexAttribPointer(GLKVertexAttribColor,
+                          4,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(CustomPoint) ,
+                          (void *)offsetof(CustomPoint, colorCoords));
+    
+    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _planeIndiciesBuffer);
+    glDrawElements(GL_TRIANGLES, total, GL_UNSIGNED_BYTE, NULL);
+    
+    
 }
 
 
 -(void) zoomWithPinchGesture:(UIPinchGestureRecognizer*) sender{
-
+    
     GLfloat scale;
 	
     if (sender.state==UIGestureRecognizerStateBegan) {
@@ -705,7 +520,7 @@
 		scale = zoomscale * sender.scale;
 		if (scale>4.0) scale = 4.0;
 		else if (scale<0.25) scale = 0.25;
-		modeltranslation.z = zTranslation / scale;
+		modelTranslation.z = zTranslation / scale;
 	}
 	else if (sender.state==UIGestureRecognizerStateEnded){
 		zoomscale *= sender.scale;
@@ -713,222 +528,55 @@
 		else if (zoomscale>4) zoomscale = 4;
 	}
     
-
+    
 }
 
 
--(void) rotateWithPanGesture:(UIPanGestureRecognizer*) recognizer{
-
-   //    NSLog(@"velocity %f",  velocity.x);
-    float rotX;
-    float rotY;
+-(void) rotateWithPanGesture:(UIPanGestureRecognizer*) recognizer {
     
     CGPoint velo = [recognizer velocityInView:self.view];
+    CGPoint diff = [recognizer translationInView:self.view];
     
     if( [recognizer numberOfTouches]==1){
-    
-    if (recognizer.state==UIGestureRecognizerStateBegan) {
-        touchEnded = NO;
-        velocity.x=0;
-        velocity.y=0;
-        rotY=0.0;
-        rotX=0.0;
-    } else if (recognizer.state==UIGestureRecognizerStateChanged) {
-        //For every pixel the user drags, we rotate the cube 1/2 degree.
-        //when the user drags from left to right, we actually want to rotate around the y axis (rotY)
         
-        if(touchEnded) {
-            return;
+        if (recognizer.state==UIGestureRecognizerStateBegan) {
+            touchEnded = NO;
+            velocity.x = 0;
+            velocity.y = 0;
+            
+            currentRotation.x = modelrotation.x;
+            currentRotation.y = modelrotation.y;
+            
+        } else if (recognizer.state==UIGestureRecognizerStateChanged) {
+       
+            if(touchEnded) return;
+            
+            //        NSLog(@"%f, %f", diff.x, diff.y);
+            modelrotation.x =  currentRotation.x+ (diff.y * 0.01);
+            modelrotation.y =  currentRotation.y+ (diff.x * 0.01);
+            
+            
         }
-        //else continue
-        
-        CGPoint diff = [recognizer translationInView:self.view];
-        rotX = GLKMathDegreesToRadians(diff.y * 0.01);
-        rotY = GLKMathDegreesToRadians(diff.x * 0.01);
-        
-        bool isInvertible;
-        GLKVector3 xAxis = GLKMatrix4MultiplyVector3(GLKMatrix4Invert(_rotMatrix, &isInvertible),
-                                                     GLKVector3Make(1, 0, 0));
-        _rotMatrix = GLKMatrix4Rotate(_rotMatrix, rotX, xAxis.x, xAxis.y, xAxis.z);
-        
-        GLKVector3 yAxis = GLKMatrix4MultiplyVector3(GLKMatrix4Invert(_rotMatrix, &isInvertible),
-                                                     GLKVector3Make(0, 1, 0));
-        _rotMatrix = GLKMatrix4Rotate(_rotMatrix, rotY, yAxis.x, yAxis.y, yAxis.z);
-        
-    } else if (recognizer.state==UIGestureRecognizerStateEnded) {
+        else if (recognizer.state==UIGestureRecognizerStateEnded) {
+            touchEnded = YES;
+        }
+    }else if (recognizer.state==UIGestureRecognizerStateEnded)  {
+        velocity.x = velo.y*0.0025;
+        velocity.y = velo.x*0.0025;
+        //        NSLog(@"Touch ended ");
         touchEnded = YES;
-    }
-    }
-    else if (recognizer.state==UIGestureRecognizerStateEnded) {
         
-       touchEnded = YES;
-        velocity.x = velo.x*0.001;
-        velocity.y = velo.y*0.001;
-        
-    }
-}
-
-
-/////////////////////////////////////////////////////////////////
-- (void)picklocationAtViewLocation: (CGPoint)aViewLocation {
-    
-//    NSLog(@"inside picking by location");
-    GLKView *glView = (GLKView *)self.view;
-    NSAssert([glView isKindOfClass:[GLKView class]],
-             @"View controller's view is not a GLKView");
-    
-    // Make the view's context current
-    [EAGLContext setCurrentContext:glView.context];
-    
-    
-    const GLfloat width = [glView drawableWidth];
-    const GLfloat height = [glView drawableHeight];
-    
-    
-    NSAssert(0 < width && 0 < height, @"Invalid drawble size");
-    
-    glBindVertexArrayOES(0);
-    //generate frame buffer
-    if(0 == pickFBO)
-    {
-        NSInteger height = ((GLKView *)self.view).drawableHeight;
-        NSInteger width = ((GLKView *)self.view).drawableWidth;
-        
-        //create framebuffer and bind it
-        GLuint framebuffer;
-        glGenFramebuffers(1, &framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        
-        //  Create a color renderbuffer, allocate storage for it, and attach it to the framebuffer’s color attachment point.
-        GLuint colorRenderbuffer;
-        glGenRenderbuffers(1, &colorRenderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, colorRenderbuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8_OES, width, height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0_OES, GL_RENDERBUFFER, colorRenderbuffer);
-        
-        GLuint depthRenderbuffer;
-        glGenRenderbuffers(1, &depthRenderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, depthRenderbuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24_OES, width, height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderbuffer);
-        
-        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) ;
-        if(status != GL_FRAMEBUFFER_COMPLETE) {
-            NSLog(@"failed to make complete framebuffer object %x", status);
-        }
-        
-#ifdef DEBUG
-        {  // Report any errors
-            GLenum error = glGetError();
-            if(GL_NO_ERROR != error) {
-                NSLog(@"GL Error: 0x%x", error);
-            }
-        }
-#endif
-        pickFBO = framebuffer;//[self buildFBOWithWidth:width height:height];
-    }
-    
-
-    //preparing attributes
-    glVertexAttribPointer(
-                          GLKVertexAttribPosition,
-                          3,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          sizeof(CustomPlane),
-                          (void *)offsetof(CustomPlane, positionCoords)
-                          );
-    glVertexAttribPointer(
-                          GLKVertexAttribColor,
-                          4,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          sizeof(CustomPlane),
-                          (void *)offsetof(CustomPlane, colorCoords)
-                          );
-    
-    glEnableVertexAttribArray(GLKVertexAttribColor);
-    glEnableVertexAttribArray(GLKVertexAttribPosition);
-    glBindFramebuffer(GL_FRAMEBUFFER, pickFBO);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    float aspect = fabsf(width/height);
-	GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 0.001f, 100.0f);
-    self.effect.transform.projectionMatrix = projectionMatrix;
-    
-    
-    GLKMatrix4 modelViewMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -zTranslation);
-    modelViewMatrix = GLKMatrix4Multiply(modelViewMatrix, _rotMatrix);
-    self.effect.transform.modelviewMatrix = modelViewMatrix;
-    self.effect.texture2d0.enabled = NO;
-    [self.effect prepareToDraw];
-    glDrawArrays(GL_TRIANGLES, 0, rows*cols*6);
-   
-#ifdef DEBUG
-    {  // Report any errors
-        GLenum error = glGetError();
-        if(GL_NO_ERROR != error)
-        {
-            NSLog(@"GL Error: 0x%x", error);
-        }
-    }
-#endif
-    
-    Byte pixelColor[4] = {0,};
-    glReadPixels(aViewLocation.x, height- aViewLocation.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixelColor);
-
-    
-    self.effect.texture2d0.enabled = YES;
-    
-    glDisableVertexAttribArray(GLKVertexAttribColor);
-    glBindVertexArrayOES(0); //unbind the vertex array, as a precaution against accidental changes by other classes
-   
-//    // Get info for picked location in pickInfo
-//    // Restore OpenGL state that picking changed
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // default frame buffer
-    
-//   NSLog(@"R:%hhu,G:%hhu,B:%hhu", pixelColor[0], pixelColor[1], pixelColor[2]);
-    
-    int row = (pixelColor[0]*rows/255.0)+ 0.5;
-    int col = (pixelColor[1]*cols/255.0)+0.5;
-    
-    int ind = (row*cols)+col;
-//    NSLog(@"Row: %d, Col:%d, %d", row, col, ind);
-    if(currentTween>-1){
-        prevTween = currentTween;
-        TexImgTween* tweenp = [self.tweens objectAtIndex:prevTween];
-        tweenp.targetCenter = tweenp.wallCenter;
-    }
-  
-    currentTween = ind;
-    TexImgTween* tween = [self.tweens objectAtIndex:ind];
-    if(currentTween==prevTween){ // go back to the wall
-        tween.targetCenter = tween.wallCenter;
-    }
-    else {
-   
-        tween.targetCenter = GLKVector3Make(0, 0, 3.0);
     }
     
 }
+
 
 
 - (void)doubleTap:(UITapGestureRecognizer *)tap {
     
-    CGPoint loc = [tap locationInView:[self view]];
-    [self picklocationAtViewLocation:loc];
     self.viewChanged = YES;
-    totalTimeElapsed=0.0;
-    durationRemaining = _duration;
-    self.viewType = WALL;
-  
-//    taps++;
-//    if(taps%2){
-//        zTranslation = 7.0f;
-//    }else{
-//         zTranslation = 4.0f;
-//    }
+    [self resetView];
+    
 }
 
 @end

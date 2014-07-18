@@ -15,11 +15,13 @@
 @property GLenum usageHint;
 @property int items;
 
-@property(nonatomic) GLenum glBufferType; // = GL_ARRAY_BUFFER
+@property(nonatomic) GLenum glBufferType; // = GL_ARRAY_BUFFER or GL_ELEMENT_ARRAY_BUFFER
 
 -(void) upload:(void *) dataArray numItems:(int) count usageHint:(GLenum) usage ;
-
+-(void) uploadElementArray:(GLushort*)elements;
 +(GLK2BufferObject*) vertexBufferObject;
++(GLK2BufferObject *)elementBufferObject;
+
 -(void) update: (void *) dataArray;
 
 @end

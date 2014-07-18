@@ -20,7 +20,6 @@
 @synthesize  functionNames;
 
 -(TexImgTweenFunction*) init{
-
     self.selectedFunction = @"linear";
     return self;
 

@@ -8,7 +8,7 @@
 
 #import "TexImgPlane.h"
 #import "ViewController.h"
-
+#import "TexImgTween.h"
 
 @implementation TexImgPlane
 
@@ -19,17 +19,18 @@
     self.vertices = (GLKVector3*)malloc(6*sizeof(GLKVector3));
     self.texCoord = (GLKVector2*)malloc(6*sizeof(GLKVector2));
     self.colors = (GLKVector4*)malloc(6*sizeof(GLKVector4));
-
+    
     return self;
 }
 
+
 -(void) updateVertices:(GLKVector3) targetCenter
           sourceCEnter:(GLKVector3) sourceCenter
-                  mode:(ViewType*)viewType
+                  mode:(ViewType)viewType
            timeElapsed:(NSTimeInterval)timeElapsed
               duration:(NSTimeInterval)duration
                  ratio:(float)ratio {
-
+    
     if(duration<=0.0){
         return;
     }
@@ -49,17 +50,18 @@
     targets[5]= GLKVector3Make(c.x - eachWidth/2,  c.y + eachHeight/2, c.z); //TL
     
     if(viewType==GLOBE){
-//        NSLog(@"GLOBE");
+        //        NSLog(@"GLOBE");
         rot = GLKMatrix3MakeXRotation((self.theta+M_PI_2+M_PI) );
         rot = GLKMatrix3Multiply(GLKMatrix3MakeYRotation( self.phi), rot);
     } else {
-//        NSLog(@"WALL");
+//               NSLog(@"WALL");
     }
     
     //Center
     vrtx = self.center;
     
     GLKVector3 distanceC = GLKVector3Subtract(targetCenter, vrtx) ;
+    //multiply scalar ratio , then add with the current value
     vrtx.x = vrtx.x + ratio*distanceC.x;
     vrtx.y = vrtx.y + ratio*distanceC.y;
     vrtx.z = vrtx.z + ratio*distanceC.z;
@@ -75,24 +77,27 @@
     if(duration<=timeElapsed){
         self.center= targetCenter;
     }
-
+    
     for(int i =0; i< 6; i++){
         vrtx = self.vertices[i];
         targets[i] = GLKMatrix3MultiplyVector3(rot, targets[i]);
         targets[i] = GLKVector3Add(targets[i],targetCenter);
         if(duration<=timeElapsed){
-            self.vertices[i]= targets[i];
+            self.vertices[i]= targets[i];//update complete
         }else {
-        //distanceC: change on position
+            //distanceC: change on position
             distanceC = GLKVector3Subtract(targets[i], vrtx) ;
-        //here the ratio is for linear function, it will be changed based on funtion
+            //here the ratio is for linear function, it will be changed based on funtion
             vrtx.x = vrtx.x + ratio*distanceC.x;
             vrtx.y = vrtx.y + ratio*distanceC.y;
             vrtx.z = vrtx.z + ratio*distanceC.z;
             self.vertices[i]= vrtx;
         }
     }
-
+    
 }
+
+
+
 
 @end

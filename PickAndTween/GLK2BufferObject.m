@@ -15,19 +15,32 @@
     self.usageHint = usage;
     self.items = count;
 	glBindBuffer( self.glBufferType, self.glName );
-	glBufferData( GL_ARRAY_BUFFER, self.items * self.totalBytesPerItem, dataArray, self.usageHint);
+	glBufferData( self.glBufferType, self.items * self.totalBytesPerItem, dataArray, self.usageHint);
 }
 
+-(void) uploadElementArray:(GLushort*)elements {
+
+    glBindBuffer(self.glBufferType, self.glName);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort)*self.items, elements, GL_STATIC_DRAW);
+
+
+}
 
 -(void) update: (void *) dataArray{
     glBindBuffer( self.glBufferType, self.glName );
-	glBufferData( GL_ARRAY_BUFFER, self.items * self.totalBytesPerItem, dataArray, self.usageHint);
+	glBufferData( self.glBufferType, self.items * self.totalBytesPerItem, dataArray, self.usageHint);
 }
 
-+(GLK2BufferObject *)vertexBufferObject
-{
++(GLK2BufferObject *)vertexBufferObject {
 	GLK2BufferObject* newObject = [[GLK2BufferObject alloc] init];
 	newObject.glBufferType = GL_ARRAY_BUFFER;
+    
+	return newObject;
+}
+
++(GLK2BufferObject *)elementBufferObject {
+	GLK2BufferObject* newObject = [[GLK2BufferObject alloc] init];
+	newObject.glBufferType = GL_ELEMENT_ARRAY_BUFFER;
     
 	return newObject;
 }
@@ -45,7 +58,7 @@
 
 
 -(void) bind {
-	glBindBuffer(GL_ARRAY_BUFFER, self.glName);
+	glBindBuffer(self.glBufferType, self.glName);
 }
 
 

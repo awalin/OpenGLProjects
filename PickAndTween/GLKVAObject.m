@@ -37,6 +37,24 @@
 {
 	/** Create a VBO on the GPU, to store data */
     
+    if(targetAttribute==GL_ELEMENT_ARRAY_BUFFER) {
+        
+        GLK2BufferObject* newVBO = [GLK2BufferObject elementBufferObject];
+        
+        newVBO.totalBytesPerItem = strideInByte; //   // newVBO.totalBytesPerItem = sizeof(GLKVector3);
+        NSString *bufferType = [NSString stringWithFormat:@"%d",targetAttribute];
+        
+        [self.VBOs setObject:newVBO forKey:bufferType ]; // so we can auto-release it when this class deallocs
+        
+        /** Send the vertex data to the new VBO */
+   
+        [newVBO uploadElementArray:data];
+        
+         NSLog(@"%d", newVBO.glName);
+    
+        return newVBO;
+        }
+    
 	GLK2BufferObject* newVBO = [GLK2BufferObject vertexBufferObject];
     newVBO.totalBytesPerItem = strideInByte; //   // newVBO.totalBytesPerItem = sizeof(GLKVector3);
     NSString *bufferType = [NSString stringWithFormat:@"%d",targetAttribute];

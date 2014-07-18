@@ -13,7 +13,6 @@
 
 @interface TexImgTween : NSObject
 
-@property TexImgPlane* plane;
 @property int planeId;
 
 @property GLKVector3 tweenRotation;
@@ -27,9 +26,9 @@
 
 @property float targetTheta;
 @property float targetPhi;
+@property NSDate* startTime;
+@property float delay;
 
 @property NSTimeInterval duration;
-
-//@property NSDate* currentTime;
 
 @end

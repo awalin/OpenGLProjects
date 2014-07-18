@@ -6,14 +6,10 @@
 @class TexImgPlane;
 @class TexImgTweens;
 @class TexImgTweenFunction;
+@class PNT_EarthPoint;
 
 
 @interface ViewController : GLKViewController
-
-
-@property(nonatomic, retain) NSMutableArray* shapes;
-
-
 
 @property (strong, nonatomic) GLKBaseEffect *effect;
 
@@ -22,17 +18,19 @@ typedef struct {
     GLKVector2 textureCoords;
     GLKVector4 colorCoords;
 }
-CustomPlane;
+CustomPoint;
+
+
 
 typedef enum {
-    GLOBE,
     WALL,
+    GLOBE,
     RESET
 } ViewType;
 
 @property BOOL viewChanged;
-@property ViewType* viewType;
-@property CustomPlane *locations; // array of the planes
+@property ViewType viewType;
+@property CustomPoint *locations; // array of the planes
 
 @property NSMutableArray* tweens;
 @property NSMutableArray* allLocations;
@@ -53,8 +51,6 @@ typedef enum {
 -(void) makePlane;
 -(void) makeGlobe;
 -(void) resetView;
--(void) changeView:(ViewType*)viewType;
--(void)setupGL;
--(void) setTweenFunction:(NSString*) function;
-
-@end
+-(void) changeView:(ViewType)viewType;
+-(IBAction) changeViewType:(id)sender;
+-(void)setupGL;@end
