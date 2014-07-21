@@ -82,8 +82,8 @@
     view.drawableMultisample = GLKViewDrawableMultisample4X;
     
     [view bindDrawable];
-    rows = 10;
-    cols = 10;
+    rows = 100;
+    cols = 100;
 	totalPlanes = (cols-1)*(rows-1);
     totalIndices = totalPlanes*6;
     NSLog(@"total indices %d", totalIndices);
@@ -92,7 +92,7 @@
     self.allLocations = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     self.tweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
-
+    
     touchEnded = NO;
     friction = 0.90;
     _duration = 2.0;
@@ -104,7 +104,7 @@
     
     tweenFunction  =  [[TexImgTweenFunction alloc] init];
     
-      _rotMatrix = GLKMatrix4Identity;
+    _rotMatrix = GLKMatrix4Identity;
     
     UITapGestureRecognizer * dtRec = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTap:)];
     dtRec.numberOfTapsRequired = 2;
@@ -122,13 +122,14 @@
 
 //initial values
 -(void) makePlane{
-for(int i=0; i< rows; i++)
-    for( int j =0; j < cols; j++) { // fixed theta
-        int index = i*cols+j;
-        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
-        location.center = location.flatLoc;
-        self.locations[index].positionCoords = location.center;
-    }
+    self.viewType = WALL;
+    for(int i=0; i< rows; i++)
+        for( int j =0; j < cols; j++) { // fixed theta
+            int index = i*cols+j;
+            PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
+            location.center = location.flatLoc;
+            self.locations[index].positionCoords = location.center;
+        }
     
 }
 
@@ -137,14 +138,15 @@ for(int i=0; i< rows; i++)
  */
 
 -(void) makeGlobe {
+    self.viewType=GLOBE;
     //the first location is on the BL corner of the screen
-  for(int i=0; i< rows; i++)
-      for( int j =0; j < cols; j++) { // fixed theta
-        int index = i*cols+j;
-        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
-        location.center = location.roundLoc;
-        self.locations[index].positionCoords = location.center;
-    }
+    for(int i=0; i< rows; i++)
+        for( int j =0; j < cols; j++) { // fixed theta
+            int index = i*cols+j;
+            PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
+            location.center = location.roundLoc;
+            self.locations[index].positionCoords = location.center;
+        }
     
 }
 
@@ -176,16 +178,18 @@ for(int i=0; i< rows; i++)
     offsetY = -1.0f;
     eachWidth = spanX/(cols-1);
     eachHeight = spanY/(rows-1);
-
+    
     int index =0 ;
+    float phi;
+    float theta;
+    float offsetTheta = GLKMathDegreesToRadians(180.0f) ;
+    float offsetPhi = GLKMathDegreesToRadians(-180.0f);
     
     GLfloat eachTheta = GLKMathDegreesToRadians(180.0f/(rows-1)); //180
     // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
     GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/(cols-1)); // 0 to 360, azimuthal, 14. //360
-    float theta = GLKMathDegreesToRadians(180.0f) ;
     for(int i=0; i< rows; i++){ // fixed phi
-        float phi = GLKMathDegreesToRadians(-180.0f) ; // j*eachPhi;        int j;
-        for( int j =0; j < cols; j++) { // fixed theta
+                for( int j =0; j < cols; j++) { // fixed theta
             
             x = offsetX + j*eachWidth;
             
@@ -199,8 +203,8 @@ for(int i=0; i< rows; i++)
             location.flatLoc = GLKVector3Make(x,y,0);
             index = cols*i+j;
             
-            phi = eachPhi*j;
-            theta = -eachTheta*i;
+            phi = offsetPhi + eachPhi*j;
+            theta = offsetTheta + eachTheta*i;
             
             location.theta = theta;
             location.phi = phi;
@@ -245,42 +249,42 @@ for(int i=0; i< rows; i++)
             
             
         }
-
+        
     }
     
-
+    
     int count=0;
     
     for(int r=0;r< rows-1 ;r++)
         for(int c=0; c< cols-1 ; c++)
-    {
-       
-        int first = r*cols+c;
-        int second = (r+1)*cols+c;
-        count = (first-r)*6 ;
-//         NSLog(@"count %d, %d, %d ", first, (first-r)*6, count);
-        //BL
-        meshIndices[count] = first;
-//        NSLog(@"%d", meshIndices[count]);
-        count++;
-        meshIndices[count] = second;
-//        NSLog(@"%d", meshIndices[count]);
-        count++;
-        meshIndices[count] = first+1;
-//        NSLog(@"%d", meshIndices[count]);
-           count++;
-        meshIndices[count] = first+1;
-//        NSLog(@"%d", meshIndices[count]);
-           count++;
-        meshIndices[count] = second;
-//        NSLog(@"%d", meshIndices[count]);
-           count++;
-        meshIndices[count] = second+1;
-//        NSLog(@"%d", meshIndices[count]);
-        
-        
-    }
-
+        {
+            
+            int first = r*cols+c;
+            int second = (r+1)*cols+c;
+            count = (first-r)*6 ;
+            //         NSLog(@"count %d, %d, %d ", first, (first-r)*6, count);
+            //BL
+            meshIndices[count] = first;
+            //        NSLog(@"%d", meshIndices[count]);
+            count++;
+            meshIndices[count] = second;
+            //        NSLog(@"%d", meshIndices[count]);
+            count++;
+            meshIndices[count] = first+1;
+            //        NSLog(@"%d", meshIndices[count]);
+            count++;
+            meshIndices[count] = first+1;
+            //        NSLog(@"%d", meshIndices[count]);
+            count++;
+            meshIndices[count] = second;
+            //        NSLog(@"%d", meshIndices[count]);
+            count++;
+            meshIndices[count] = second+1;
+            //        NSLog(@"%d", meshIndices[count]);
+            
+            
+        }
+    
 }
 
 -(IBAction) changeViewType:(id)sender {
@@ -297,9 +301,9 @@ for(int i=0; i< rows; i++)
     
     self.viewType = viewType;
     self.viewChanged=YES;
-    NSLog(@"inside change view ");
+//    NSLog(@"inside change view ");
     NSDate* currentTime = [NSDate date];
-
+    
     for(int index=0; index<totalPoints; index++){
         TexImgTween* tween = [self.tweens objectAtIndex:index];
         PNT_EarthPoint* plane = [self.allLocations objectAtIndex:index];
@@ -353,8 +357,8 @@ for(int i=0; i< rows; i++)
         NSLog(@"Error loading file: %@", [error localizedDescription]);
     }
     self.effect.texture2d0.name = info.name;
-  [self makePlane];
-  //[self makeGlobe];
+    [self makePlane];
+    //[self makeGlobe];
     
     glGenBuffers(1, &_locationVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
@@ -499,15 +503,6 @@ for(int i=0; i< rows; i++)
                           sizeof(CustomPoint) ,
                           (void *)offsetof(CustomPoint, textureCoords));
     
-//    glBindBuffer(GL_ARRAY_BUFFER, _locationColorBuffer);
-//    glEnableVertexAttribArray(GLKVertexAttribColor);
-//    glVertexAttribPointer(GLKVertexAttribColor,
-//                          4,
-//                          GL_FLOAT,
-//                          GL_FALSE,
-//                          sizeof(CustomPoint) ,
-//                          (void *)offsetof(CustomPoint, colorCoords));
-    
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _planeIndiciesBuffer);
     glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, NULL);
@@ -555,7 +550,7 @@ for(int i=0; i< rows; i++)
             currentRotation.y = modelrotation.y;
             
         } else if (recognizer.state==UIGestureRecognizerStateChanged) {
-       
+            
             if(touchEnded) return;
             
             //        NSLog(@"%f, %f", diff.x, diff.y);
