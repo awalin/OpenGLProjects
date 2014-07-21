@@ -50,7 +50,7 @@
    
         [newVBO uploadElementArray:data];
         
-         NSLog(@"%d", newVBO.glName);
+         NSLog(@"element array buffer %d", newVBO.glName);
     
         return newVBO;
         }

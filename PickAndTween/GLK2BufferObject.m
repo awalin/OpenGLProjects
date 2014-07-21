@@ -21,7 +21,7 @@
 -(void) uploadElementArray:(GLushort*)elements {
 
     glBindBuffer(self.glBufferType, self.glName);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort)*self.items, elements, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*self.items, elements, GL_STATIC_DRAW);
 
 
 }

@@ -32,8 +32,9 @@
     GLfloat zTranslation;
     NSTimeInterval _duration;
     NSTimeInterval delay;
-    GLushort *meshIndices;
-    int total;
+    GLuint *meshIndices;
+    int totalIndices;
+    int totalPlanes;
     int totalPoints;
     
     
@@ -81,17 +82,17 @@
     view.drawableMultisample = GLKViewDrawableMultisample4X;
     
     [view bindDrawable];
-    rows = 100;
-    cols = 100;
-	totalPoints = cols*rows;
-    total = totalPoints*6;
-    self.locations = (CustomPoint*) malloc(total*sizeof(CustomPoint));
-    self.allLocations = [[NSMutableArray alloc] initWithCapacity:rows*cols];
-    self.tweens = [[NSMutableArray alloc] initWithCapacity:rows*cols];
-    
-    meshIndices = (GLushort*)malloc(total*sizeof(GLushort));
-    
-    delay=0.0;
+    rows = 10;
+    cols = 10;
+	totalPlanes = (cols-1)*(rows-1);
+    totalIndices = totalPlanes*6;
+    NSLog(@"total indices %d", totalIndices);
+    totalPoints = rows*cols;
+    self.locations = (CustomPoint*) malloc(totalPoints*sizeof(CustomPoint));
+    self.allLocations = [[NSMutableArray alloc] initWithCapacity:totalPoints];
+    self.tweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
+    meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
+
     touchEnded = NO;
     friction = 0.90;
     _duration = 2.0;
@@ -103,19 +104,7 @@
     
     tweenFunction  =  [[TexImgTweenFunction alloc] init];
     
-    
-    UIImage *texImage = [UIImage imageNamed:@"earth-map.png"];
-    float imageAspect = texImage.size.width/texImage.size.height;
-    //    NSLog(@"%f", imageAspect);
-    
-    spanX = 2.0*imageAspect;
-    offsetX = -1.0*imageAspect;
-    spanY = 2.0f;
-    offsetY = -1.0f;
-    eachWidth = spanX/cols;
-    eachHeight = spanY/rows;
-    /////////rotation and jesture //////
-    _rotMatrix = GLKMatrix4Identity;
+      _rotMatrix = GLKMatrix4Identity;
     
     UITapGestureRecognizer * dtRec = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTap:)];
     dtRec.numberOfTapsRequired = 2;
@@ -133,7 +122,9 @@
 
 //initial values
 -(void) makePlane{
-    for(int index=0; index<totalPoints; index++) { // fixed theta
+for(int i=0; i< rows; i++)
+    for( int j =0; j < cols; j++) { // fixed theta
+        int index = i*cols+j;
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
         location.center = location.flatLoc;
         self.locations[index].positionCoords = location.center;
@@ -147,7 +138,9 @@
 
 -(void) makeGlobe {
     //the first location is on the BL corner of the screen
-    for(int index=0; index<totalPoints; index++) { // fixed theta
+  for(int i=0; i< rows; i++)
+      for( int j =0; j < cols; j++) { // fixed theta
+        int index = i*cols+j;
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
         location.center = location.roundLoc;
         self.locations[index].positionCoords = location.center;
@@ -161,38 +154,55 @@
     
     GLfloat s=0.0,t=0.0;
     GLfloat u=0.0,v=0.0;
+    GLfloat y=0.0, x=0.0;
     GLKVector2 txtr;
     float spanTX = 1.0; //rect.size.width;//2.0;
     float offsetTX = 0.0;
     
     float spanTY = 1.0f;//rect.size.height;// 2.0;
     float offsetTY = 0.0f;
-    GLfloat eachWidthT = spanTX/cols;
-    GLfloat eachHeightT = spanTY/rows;
+    GLfloat eachWidthT = spanTX/(cols-1);
+    GLfloat eachHeightT = spanTY/(rows-1);
     
-    // centre point for each location
-    v = offsetTY+ 0.0;
-    GLfloat y = offsetY+0.0;
     
-    GLfloat eachTheta = GLKMathDegreesToRadians(180.0f/rows);
+    UIImage *texImage = [UIImage imageNamed:@"earth-map.png"];
+    float imageAspect = texImage.size.width/texImage.size.height;
+    //    NSLog(@"%f", imageAspect);
+    
+    spanX = 2.0*imageAspect;
+    offsetX = -1.0*imageAspect;
+    
+    spanY = 2.0f;
+    offsetY = -1.0f;
+    eachWidth = spanX/(cols-1);
+    eachHeight = spanY/(rows-1);
+
+    int index =0 ;
+    
+    GLfloat eachTheta = GLKMathDegreesToRadians(180.0f/(rows-1)); //180
     // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
-    GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/cols); // 0 to 360, azimuthal, 14.
-    
+    GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/(cols-1)); // 0 to 360, azimuthal, 14. //360
     float theta = GLKMathDegreesToRadians(180.0f) ;
-    
     for(int i=0; i< rows; i++){ // fixed phi
-        
-        GLfloat x = offsetX + 0.0;
-        float phi = GLKMathDegreesToRadians(-180.0f) ; // j*eachPhi;
-        
-        u = offsetTX + 0.0; // center x of texture
-        int j;
-        for( j =0; j < cols; j++) { // fixed theta
+        float phi = GLKMathDegreesToRadians(-180.0f) ; // j*eachPhi;        int j;
+        for( int j =0; j < cols; j++) { // fixed theta
+            
+            x = offsetX + j*eachWidth;
+            
+            y = offsetY + i*eachHeight;
+            
+            u = offsetTX + j*eachWidthT;
+            
+            v = offsetTY + i*eachHeightT;
             
             PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
-            int index = (cols*i+j);
+            location.flatLoc = GLKVector3Make(x,y,0);
+            index = cols*i+j;
+            
+            phi = eachPhi*j;
+            theta = -eachTheta*i;
+            
             location.theta = theta;
-            location.planeId= index;
             location.phi = phi;
             location.row = i;
             location.col = j;
@@ -206,11 +216,10 @@
             GLfloat y1 = radius*sin(location.theta)*sin(location.phi);
             GLfloat z1 = radius*cos(location.theta);
             
-            location.flatLoc = GLKVector3Make(x,y,0);
             location.roundLoc = GLKVector3Make( y1, z1, x1 );
             
             tween.globeCenter = location.roundLoc;
-            tween.wallCenter =  location.roundLoc;
+            tween.wallCenter =  location.flatLoc;
             tween.duration = _duration;
             
             location.height = eachHeight;
@@ -222,14 +231,8 @@
             txtr = GLKVector2Make(s, t); // BL (0,0)
             location.texCoord = txtr;
             
-            phi = phi + eachPhi;
-            u = u + eachWidthT;
-            x = x + eachWidth;
-            
             int colorId = index+1;
-            
-            
-			int red = colorId % 255;
+            int red = colorId % 255;
 			int green = colorId>= 255 ? (colorId/255)%255 : 0;
 			int blue = colorId>=255*255 ? (colorId/255)/255 : 0;
 			GLKVector4 colorV  = GLKVector4Make(red/255.0f, green/255.0f, blue/255.0f, 1);
@@ -240,38 +243,44 @@
             [self.allLocations insertObject:location atIndex:index];
             [self.tweens insertObject:tween atIndex:index];
             
-
             
         }
-        v = v + eachHeightT;
-        y = y + eachHeight;
-        theta = theta - eachTheta;
+
     }
     
-    
+
     int count=0;
     
-    for(int i=0; i< rows; i++){ // fixed phi
-        int j;
-        for( j =0; j < cols; j++) { // fixed theta
-            //BL
-            meshIndices[count++] = (cols*i)+j;
-            //BR
-            meshIndices[count++] = (cols*i)+(j+1);
-            //TL
-            meshIndices[count++] = (cols*(i+1))+j;
-            //TR
-            meshIndices[count++] = (cols*(i+1))+(j+1);
-            
-            meshIndices[count++] = (cols*i)+(j+1);
-            
-            meshIndices[count++] = (cols*(i+1))+j;
-        }
+    for(int r=0;r< rows-1 ;r++)
+        for(int c=0; c< cols-1 ; c++)
+    {
+       
+        int first = r*cols+c;
+        int second = (r+1)*cols+c;
+        count = (first-r)*6 ;
+//         NSLog(@"count %d, %d, %d ", first, (first-r)*6, count);
+        //BL
+        meshIndices[count] = first;
+//        NSLog(@"%d", meshIndices[count]);
+        count++;
+        meshIndices[count] = second;
+//        NSLog(@"%d", meshIndices[count]);
+        count++;
+        meshIndices[count] = first+1;
+//        NSLog(@"%d", meshIndices[count]);
+           count++;
+        meshIndices[count] = first+1;
+//        NSLog(@"%d", meshIndices[count]);
+           count++;
+        meshIndices[count] = second;
+//        NSLog(@"%d", meshIndices[count]);
+           count++;
+        meshIndices[count] = second+1;
+//        NSLog(@"%d", meshIndices[count]);
+        
+        
     }
-    
-    NSLog(@"count %d", count);
-    
-    
+
 }
 
 -(IBAction) changeViewType:(id)sender {
@@ -290,8 +299,8 @@
     self.viewChanged=YES;
     NSLog(@"inside change view ");
     NSDate* currentTime = [NSDate date];
-    int t=rows*cols;
-    for(int index=0; index<t; index++){
+
+    for(int index=0; index<totalPoints; index++){
         TexImgTween* tween = [self.tweens objectAtIndex:index];
         PNT_EarthPoint* plane = [self.allLocations objectAtIndex:index];
         tween.startTime = currentTime;
@@ -344,26 +353,25 @@
         NSLog(@"Error loading file: %@", [error localizedDescription]);
     }
     self.effect.texture2d0.name = info.name;
-    [self makePlane];
-    //[self makeGlobe];
+  [self makePlane];
+  //[self makeGlobe];
     
     glGenBuffers(1, &_locationVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*totalPoints, self.locations, GL_DYNAMIC_DRAW);
     
 	
     glGenBuffers(1, &_locationTextureBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, _locationTextureBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*totalPoints, self.locations, GL_STATIC_DRAW);
     
     glGenBuffers(1, &_locationColorBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, _locationColorBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_STATIC_DRAW);
-
+    glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*totalPoints, self.locations, GL_STATIC_DRAW);
 	
     glGenBuffers(1, &_planeIndiciesBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _planeIndiciesBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort)*total, meshIndices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*totalIndices, meshIndices, GL_STATIC_DRAW);
     
     
 }
@@ -393,14 +401,13 @@
     NSTimeInterval durationRemaining;
     
     //    NSLog(@"inside animation");
-    int t = rows*cols;
-    for(int index =0; index < t; index++){
+    for(int index =0; index < totalPoints; index++){
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
         TexImgTween* tween = [self.tweens objectAtIndex:index];
         float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
         durationRemaining = _duration - timePassedSinceStart;
         float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
-        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
+        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration: _duration];
         
         [location updateVertex:tween.targetCenter
                           mode:self.viewType
@@ -448,7 +455,7 @@
         [self animateView];// changes the points
         
         glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*total, self.locations, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*totalPoints, self.locations, GL_DYNAMIC_DRAW);
         
     }
     if(self.viewType==GLOBE)
@@ -473,7 +480,7 @@
     [self.effect prepareToDraw];
     
     
-//    glDisableVertexAttribArray(GLKVertexAttribColor);
+    glDisableVertexAttribArray(GLKVertexAttribColor);
     
     glBindBuffer(GL_ARRAY_BUFFER, _locationVertexBuffer);
     glEnableVertexAttribArray(GLKVertexAttribPosition);
@@ -492,18 +499,18 @@
                           sizeof(CustomPoint) ,
                           (void *)offsetof(CustomPoint, textureCoords));
     
-    glBindBuffer(GL_ARRAY_BUFFER, _locationColorBuffer);
-    glEnableVertexAttribArray(GLKVertexAttribColor);
-    glVertexAttribPointer(GLKVertexAttribColor,
-                          4,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          sizeof(CustomPoint) ,
-                          (void *)offsetof(CustomPoint, colorCoords));
+//    glBindBuffer(GL_ARRAY_BUFFER, _locationColorBuffer);
+//    glEnableVertexAttribArray(GLKVertexAttribColor);
+//    glVertexAttribPointer(GLKVertexAttribColor,
+//                          4,
+//                          GL_FLOAT,
+//                          GL_FALSE,
+//                          sizeof(CustomPoint) ,
+//                          (void *)offsetof(CustomPoint, colorCoords));
     
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _planeIndiciesBuffer);
-    glDrawElements(GL_TRIANGLES, total, GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, NULL);
     
     
 }
