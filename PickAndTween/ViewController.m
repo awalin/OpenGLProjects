@@ -39,6 +39,7 @@
     int totalBars;
     int totalLinePoints;
     BOOL toRotate;
+    float imageAspect;
     
     
     int rows;
@@ -67,7 +68,7 @@
 -(void) viewDidLoad
 {
 	[super viewDidLoad];
-
+    
     
     /** Creating and "making current" an EAGLContext must be the very first thing any OpenGL app does! */
 	if( self.localContext == nil )
@@ -90,20 +91,20 @@
     cols = 100;
 	totalPlanes = (cols-1)*(rows-1);
     totalIndices = totalPlanes*6;
-    NSLog(@"total indices %d", totalIndices);
+    //    NSLog(@"total indices %d", totalIndices);
     totalPoints = rows*cols;
     self.locations = (CustomPoint*) malloc(totalPoints*sizeof(CustomPoint));
     self.allLocations = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     
     totalBars = (sizeof(_population)/sizeof(_population[0]));
-    NSLog(@"total bars %d", totalBars);
+    //    NSLog(@"total bars %d", totalBars);
     totalLinePoints = 2*totalBars;
     self.bars = (CustomPoint*)malloc(totalLinePoints*sizeof(CustomPoint));
     self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     
     self.tweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
-
+    
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
     
     touchEnded = NO;
@@ -129,6 +130,8 @@
     
     self.pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(zoomWithPinchGesture:)];
     [self.view addGestureRecognizer:self.pinchRecognizer];
+    self.viewType = [self.viewTypeSegments selectedSegmentIndex]+1;
+    NSLog(@"%d", self.viewType);
     
     [self initData];
     [self setupGL];
@@ -182,7 +185,7 @@
     
     
     UIImage *texImage = [UIImage imageNamed:@"earthbw.jpeg"];
-    float imageAspect = texImage.size.width/texImage.size.height;
+    imageAspect = texImage.size.width/texImage.size.height;
     //    NSLog(@"%f", imageAspect);
     
     spanX = 2.0*imageAspect;
@@ -197,28 +200,25 @@
     float phi;
     float theta;
     float offsetTheta = GLKMathDegreesToRadians(180.0f) ;
-    float offsetPhi = GLKMathDegreesToRadians(-180.0f);
+    float offsetPhi = GLKMathDegreesToRadians(360);
     
     GLfloat eachTheta = GLKMathDegreesToRadians(180.0f/(rows-1)); //180
     // 0 to 180, inclination from vertical axis, bottom row, inclination 180, top row inclination 0
     GLfloat eachPhi = GLKMathDegreesToRadians(360.0f/(cols-1)); // 0 to 360, azimuthal, 14. //360
     for(int i=0; i< rows; i++){ // fixed phi
-                for( int j =0; j < cols; j++) { // fixed theta
+        for( int j =0; j < cols; j++) { // fixed theta
             
             x = offsetX + j*eachWidth;
-            
             y = offsetY + i*eachHeight;
-            
             u = offsetTX + j*eachWidthT;
-            
             v = offsetTY + i*eachHeightT;
             
             PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
             location.flatLoc = GLKVector3Make(x,y,0);
             index = cols*i+j;
             
-            phi = offsetPhi + eachPhi*j;
-            theta = offsetTheta + eachTheta*i;
+            phi = offsetPhi - eachPhi*j;
+            theta = offsetTheta - eachTheta*i;
             
             location.theta = theta;
             location.phi = phi;
@@ -230,14 +230,14 @@
             tween.targetPhi = phi;
             tween.targetTheta = theta;
             tween.duration = _duration;
-            tween.delay = index*delay;
+            tween.delay = abs(cols/2-j)*delay;
             
             GLfloat x1 = radius*sin(location.theta)*cos(location.phi);
             GLfloat y1 = radius*sin(location.theta)*sin(location.phi);
             GLfloat z1 = radius*cos(location.theta);
             
             location.roundLoc = GLKVector3Make( y1, z1, x1 );
-                    
+            
             tween.globeCenter = location.roundLoc;
             tween.wallCenter =  location.flatLoc;
             tween.duration = _duration;
@@ -262,7 +262,6 @@
             
             [self.allLocations insertObject:location atIndex:index];
             [self.tweens insertObject:tween atIndex:index];
-            
             
         }
         
@@ -298,9 +297,6 @@
             
             
         }
-    self.viewType = [self.viewTypeSegments selectedSegmentIndex] +1;
-    NSLog(@"%d", self.viewType);
-    
     
     [self initBars];
     
@@ -308,12 +304,12 @@
 
 
 -(void) initBars{
-
+    
     int count = 0;
     for(int i=0;i<totalBars; i++){
         
         PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
-
+        
         float x = _population[i].lat;
         float y = _population[i].lon;
         float z = _population[i].magnitude;
@@ -326,7 +322,7 @@
         float xp = 1-(180.0-_population[i].lon)/180.0;
         float yp = 1-(90.0-_population[i].lat)/90.0;
         
-        location.flatLoc = GLKVector3Make(xp, yp, 0.0);
+        location.flatLoc = GLKVector3Make(xp*imageAspect, yp, 0.0);
         
         location.length = z;
         location.phi = y;
@@ -341,7 +337,7 @@
         float X = c*(1- abs(hue%2-1));
         float m = L - 0.5*c;
         
-//        NSLog(@"Z=%f, X=%f C=%f", z, X, c);
+        //        NSLog(@"Z=%f, X=%f C=%f", z, X, c);
         GLKVector3 col;
         
         if(hue>=0 && hue<1){
@@ -357,7 +353,7 @@
         }else if(hue>=5 && hue<6){
             col = GLKVector3Make(c+m,0+m,X+m);
         }
-
+        
         GLKVector3 startP = location.roundLoc;
         GLKVector3 endP = GLKVector3Normalize(GLKVector3Subtract(location.roundLoc,GLKVector3Make(0,0,0)));
         endP = GLKVector3Add(GLKVector3MultiplyScalar(endP,location.length),startP);
@@ -383,13 +379,13 @@
         tween2.wallCenter =   GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
         tween2.duration = _duration;
         [self.barTweens insertObject:tween2 atIndex:(count+1)];
-//       NSLog(@"color: %f %f %f", col.x, col.y, col.z);
-
-     //if globe mode
+        //       NSLog(@"color: %f %f %f", col.x, col.y, col.z);
+        
+        //if globe mode
         if(self.viewType==GLOBE){
             self.bars[count].positionCoords = startP;
             self.bars[count].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
-           
+            
             count++;
             self.bars[count].positionCoords = endP;
             self.bars[count].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
@@ -402,13 +398,13 @@
             self.bars[count].positionCoords = GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
             self.bars[count].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
             count++;
+        }
+        
+        //        NSLog(@"%f, %f, %f", self.bars[i].positionCoords.x, self.bars[i].positionCoords.y ,self.bars[i].positionCoords.z);
     }
     
-//        NSLog(@"%f, %f, %f", self.bars[i].positionCoords.x, self.bars[i].positionCoords.y ,self.bars[i].positionCoords.z);
- }
-
-
-
+    
+    
 }
 
 -(IBAction) changeViewType:(id)sender {
@@ -425,7 +421,7 @@
     
     self.viewType = viewType;
     self.viewChanged=YES;
-//    NSLog(@"inside change view ");
+    //    NSLog(@"inside change view ");
     NSDate* currentTime = [NSDate date];
     
     for(int index=0; index<totalPoints; index++){
@@ -441,7 +437,19 @@
             [[self.tweens objectAtIndex:index] setSourceCenter: plane.roundLoc];
         }
     }
-    
+    for(int index=0; index<totalBars; index++){
+        TexImgTween* tween = [self.barTweens objectAtIndex:index];
+        PNT_EarthPoint* line = [self.allLines objectAtIndex:index];
+        tween.startTime = currentTime;
+        //        NSLog(@"twn start time %@", tween.startTime);
+        if(self.viewType==GLOBE){
+            [[self.barTweens objectAtIndex:index] setTargetCenter: line.roundLoc];
+            [[self.barTweens objectAtIndex:index] setSourceCenter: line.flatLoc];
+        } else if(self.viewType==WALL){
+            [[self.barTweens objectAtIndex:index] setTargetCenter: line.flatLoc];
+            [[self.barTweens objectAtIndex:index] setSourceCenter: line.roundLoc];
+        }
+    }
 }
 
 -(void) setDuration:(float) val {
@@ -481,7 +489,7 @@
         NSLog(@"Error loading file: %@", [error localizedDescription]);
     }
     self.effect.texture2d0.name = info.name;
-
+    
     [self setUpEarth];
     
     [self setUpLines];
@@ -489,9 +497,10 @@
 
 -(void) setUpEarth{
     
-    [self makeGlobe];
+ [self makeGlobe];
+//    [self makePlane];
     //    toRotate = YES;
-
+    
     GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
     drawObject.mode = GL_TRIANGLES;
     
@@ -511,14 +520,14 @@
                            numOfFloats:2
                                 stride:sizeof(CustomPoint)
                                 offset:(void *)offsetof(CustomPoint, textureCoords) ];
-
+    
     NSString *bufferType = [NSString stringWithFormat:@"%d",GLKVertexAttribPosition];
     locationVertexBuffer = [(GLK2BufferObject*)[drawObject.VAO.VBOs objectForKey:bufferType] glName];
-    NSLog(@"vertex buffer  %d", locationVertexBuffer);
+    //    NSLog(@"vertex buffer  %d", locationVertexBuffer);
     
     bufferType = [NSString stringWithFormat:@"%d",GLKVertexAttribTexCoord0];
     locationTextureBuffer = [(GLK2BufferObject*)[drawObject.VAO.VBOs objectForKey:bufferType] glName];
-    NSLog(@"texture buffer %d", locationTextureBuffer);
+    //    NSLog(@"texture buffer %d", locationTextureBuffer);
     
     [drawObject.VAO addVBOForAttribute:GL_ELEMENT_ARRAY_BUFFER
                         filledWithData:meshIndices //addres of the bytes to copy
@@ -529,11 +538,10 @@
     
     bufferType = [NSString stringWithFormat:@"%d",GL_ELEMENT_ARRAY_BUFFER];
     _planeIndicesBuffer = [(GLK2BufferObject*)[drawObject.VAO.VBOs objectForKey:bufferType] glName];
-    NSLog(@"indices buffer %d", _planeIndicesBuffer);
-
+    //    NSLog(@"indices buffer %d", _planeIndicesBuffer);
     
     [self.shapes addObject: drawObject];
-  
+    
 }
 
 -(void) setUpLines{
@@ -550,7 +558,7 @@
                            numOfFloats:3 //floats in GLKVector3
                                 stride:sizeof(CustomPoint)
                                 offset:(void *)offsetof(CustomPoint, positionCoords)];
-
+    
     
     [drawObject.VAO addVBOForAttribute:GLKVertexAttribColor
                         filledWithData:self.bars //addres of the bytes to copy
@@ -559,8 +567,8 @@
                                 stride:sizeof(CustomPoint)
                                 offset:(void *)offsetof(CustomPoint, colorCoords) ];
     
-   [self.shapes addObject: drawObject];
-
+    [self.shapes addObject: drawObject];
+    
 }
 
 -(void) setDelay:(float) val {
@@ -596,12 +604,11 @@
         ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween.delay duration: tween.duration];
         
         if(timePassedSinceStart > tween.delay){
-          BOOL isUpdated = [location updateVertex:tween.targetCenter
-                          mode:self.viewType
-                   timeElapsed: timePassedSinceStart-tween.delay//timeElapsedSinceLastUpdate
-                      duration: _duration //durationRemaining
-                         ratio:ratio];
-            
+            BOOL isUpdated = [location updateVertex:tween.targetCenter
+                                               mode:self.viewType
+                                        timeElapsed: timePassedSinceStart-tween.delay
+                                           duration: _duration //durationRemaining
+                                              ratio:ratio];
             if(isUpdated==NO){
                 toRotate = YES;
             }else {
@@ -609,6 +616,30 @@
             }
         }
         self.locations[index].positionCoords = location.center;
+    }
+    
+    
+    for(int index =0; index < totalLinePoints/2; index++){
+        PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
+        TexImgTween* tween = [self.barTweens objectAtIndex:index];
+        float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
+        durationRemaining = _duration - timePassedSinceStart;
+        float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
+        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
+        
+        if(timePassedSinceStart > tween.delay){
+            BOOL isUpdated = [location updateVertex:tween.targetCenter
+                                               mode:self.viewType
+                                        timeElapsed: timePassedSinceStart
+                                           duration: _duration
+                                              ratio:ratio];
+            if(isUpdated==NO){
+                toRotate = YES;
+            }else {
+                toRotate=NO;
+            }
+        }
+        self.bars[index].positionCoords = location.center;
     }
 }
 
@@ -643,7 +674,7 @@
     
     [self renderEarth];
     [self renderBars];
-    }
+}
 
 
 -(void) update {
@@ -651,14 +682,22 @@
     if(self.viewChanged) {
         toRotate=NO;
         [self animateView];// changes the points
+        
         //update earth
+        //TODO: use function calls from drawcall object rathert han using directly
         glBindBuffer(GL_ARRAY_BUFFER, locationVertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*totalPoints, self.locations, GL_DYNAMIC_DRAW);
         
         //update lines if needed
-    
+        GLK2DrawCall* drawObject = [self.shapes objectAtIndex:1];
+        [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
+                                   filledWithData:self.bars //addres of the bytes to copy
+                                      numVertices:drawObject.numOfVerticesToDraw
+                                      numOfFloats:3 //floats in GLKVector3
+                                           stride:sizeof(CustomPoint)
+                                           offset:(void *)offsetof(CustomPoint, positionCoords)];
+            
     }
-    
     
     if(self.viewType==GLOBE && toRotate==YES)
         modelrotation.y -= 0.2;
@@ -668,14 +707,23 @@
     
 }
 
+/***
+ 
+GLKVector4 UIcolor : RGB to HSV
+ -(GLKVector4)toRGBwithHue:(float)h saturation:(float)s value:(float)v alpha:(float)a {
+ CGFloat r, g, b, alpha;
+ UIColor *color = [UIColor colorWithHue:h saturation:s brightness:v alpha:a];
+ [color getRed:&r green:&g blue:&b alpha:&alpha];
+ GLKVector4 rgb = GLKVector4Make(r, g, b, a);
+ return rgb;
+ }
+ ***/
+
+
 
 -(void) renderEarth {
-
-    self.effect.texture2d0.enabled = YES;
-    glDisableVertexAttribArray(GLKVertexAttribColor);
-    [self.effect prepareToDraw];
-
-    if( self.shapes == nil || self.shapes.count < 1 ){
+    
+  if( self.shapes == nil || self.shapes.count < 1 ){
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
     }
@@ -684,23 +732,22 @@
     
     {
         if( drawCall.VAO != nil ){
-            [drawCall drawWithElements:GL_TRIANGLES];        }
+            self.effect.texture2d0.enabled = YES;
+//            glDisableVertexAttribArray(GLKVertexAttribColor);
+            [self.effect prepareToDraw];
+            [drawCall drawWithElements:GL_TRIANGLES];
+        }
         else {
             NSLog(@"not available");
         }
     }
-
-    
-   glBindVertexArrayOES(0);
+    glBindVertexArrayOES(0);
 }
 
 -(void) renderBars{
     
-    glBindVertexArrayOES(0);
-    self.effect.texture2d0.enabled = NO;
-    glEnableVertexAttribArray(GLKVertexAttribColor);
-    [self.effect prepareToDraw];
-    
+    //    glBindVertexArrayOES(0);
+
     if( self.shapes == nil || self.shapes.count < 1 ){
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
@@ -708,17 +755,19 @@
     
     //for( GLK2DrawCall* drawCall in self.shapes )
     GLK2DrawCall* drawCall = [self.shapes objectAtIndex:1];
-
     {
         if( drawCall.VAO != nil ){
+            self.effect.texture2d0.enabled = NO;
+            [self.effect prepareToDraw];
+            glEnableVertexAttribArray(GLKVertexAttribColor);
             [drawCall drawWithMode:GL_LINES];
         }
         else {
             NSLog(@"not available");
         }
     }
-
-
+    
+    
 }
 
 

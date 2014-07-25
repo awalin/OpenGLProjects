@@ -30,6 +30,7 @@
 
 -(void) drawWithMode:(GLuint) mode{
 //    NSLog(@"VAO name %d", self.VAO.glName );
+    glEnableVertexAttribArray(GLKVertexAttribColor);
     glBindVertexArrayOES( self.VAO.glName );
 //    NSLog(@"%d", self.numOfVerticesToDraw);
     glDrawArrays(self.mode, 0, self.numOfVerticesToDraw);
