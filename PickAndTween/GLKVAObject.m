@@ -23,7 +23,7 @@
     if (self) {
         glGenVertexArraysOES( 1, &glName );
 		self.VBOs = [[NSMutableDictionary alloc] init];
-        //        NSLog(@"name= %d", glName);
+        NSLog(@"VAO name= %d", glName);
     }
     return self;
 }
@@ -48,7 +48,7 @@
         
         /** Send the vertex data to the new VBO */
    
-        [newVBO uploadElementArray:data];
+        [newVBO uploadElementArray:data numItems:numDataItems];
         
          NSLog(@"element array buffer %d", newVBO.glName);
     
@@ -64,8 +64,7 @@
 	/** Send the vertex data to the new VBO */
 	if(targetAttribute== GLKVertexAttribPosition){
         [newVBO upload:data numItems:numDataItems usageHint:GL_DYNAMIC_DRAW];
-    }
-    else {
+    } else {
         [newVBO upload:data numItems:numDataItems usageHint:GL_STATIC_DRAW];
     }
 	

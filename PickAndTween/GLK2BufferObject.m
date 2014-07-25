@@ -18,8 +18,9 @@
 	glBufferData( self.glBufferType, self.items * self.totalBytesPerItem, dataArray, self.usageHint);
 }
 
--(void) uploadElementArray:(GLushort*)elements {
-
+-(void) uploadElementArray:(GLuint*)elements numItems:(int)count{
+    
+    self.items = count;
     glBindBuffer(self.glBufferType, self.glName);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*self.items, elements, GL_STATIC_DRAW);
 
@@ -50,7 +51,7 @@
     self = [super init];
     if (self) {
         glGenBuffers(1, &glName);
-//         NSLog(@"name of vb = %d", glName);
+         NSLog(@"VBO Name = %d", glName);
     }
     return self;
 }

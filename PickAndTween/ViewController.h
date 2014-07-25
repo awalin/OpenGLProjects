@@ -17,9 +17,14 @@ typedef struct {
     GLKVector3 positionCoords;
     GLKVector2 textureCoords;
     GLKVector4 colorCoords;
-}
-CustomPoint;
+} CustomPoint;
 
+
+typedef struct {
+	float lat;
+	float lon;
+	float magnitude;
+} LatLonBar;
 
 
 typedef enum {
@@ -31,14 +36,23 @@ typedef enum {
 @property BOOL viewChanged;
 @property ViewType viewType;
 @property CustomPoint *locations; // array of the planes
+@property CustomPoint *bars;
 
 @property NSMutableArray* tweens;
+@property NSMutableArray* barTweens;
+@property NSMutableArray* curvetweens;
+
 @property NSMutableArray* allLocations;
+@property NSMutableArray* allLines;
+
+@property(nonatomic, retain) NSMutableArray* shapes;
 
 @property double latMx;
 @property double longMx;
 @property double latMn;
 @property double longMn;
+
+@property IBOutlet UISegmentedControl* viewTypeSegments;
 
 @property UIPanGestureRecognizer *panRecognizer;
 @property UIPinchGestureRecognizer *pinchRecognizer;

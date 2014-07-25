@@ -12,7 +12,7 @@
 #import <GLKit/GLKit.h>
 #import "ViewController.h"
 
-@interface PNT_EarthPoint : GLKVAObject
+@interface PNT_EarthPoint : NSObject
 
 
 @property GLKVector3 flatLoc;
@@ -24,9 +24,13 @@
 
 @property float height;
 @property float width;
-
+@property float length;
 @property int row;
 @property int col;
+//read long and lat from file, map it into screen coordinates, then those points will become end points of lines
+//lines will make one model
+@property float longitude;
+@property float lattitude;
 
 @property float theta;
 @property float phi;
@@ -36,7 +40,7 @@
 
 -(PNT_EarthPoint*) init;
 
--(void) updateVertex:(GLKVector3) targetCenter
+-(BOOL) updateVertex:(GLKVector3) targetCenter
                 mode:(ViewType)viewType
          timeElapsed:(NSTimeInterval)timeElapsed
             duration:(NSTimeInterval)duration

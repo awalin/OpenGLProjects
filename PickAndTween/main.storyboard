@@ -1,42 +1,50 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5056" systemVersion="13E28" targetRuntime="iOS.CocoaTouch.iPad" propertyAccessControl="none" useAutolayout="YES" initialViewController="YZN-DK-qWY">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5056" systemVersion="13E28" targetRuntime="iOS.CocoaTouch.iPad" propertyAccessControl="none" useAutolayout="YES" initialViewController="09T-jw-ngQ">
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3733"/>
     </dependencies>
     <scenes>
-        <!--GLKit View Controller - Image Texture Mapping-->
-        <scene sceneID="RgI-ic-6l4">
+        <!--GLKit View Controller-->
+        <scene sceneID="QZl-GA-7Zh">
             <objects>
-                <glkViewController storyboardIdentifier="glkviewcontroller" autoresizesArchivedViewToFullSize="NO" title="Image Texture Mapping" modalPresentationStyle="pageSheet" preferredFramesPerSecond="30" id="YZN-DK-qWY" customClass="ViewController" sceneMemberID="viewController">
+                <glkViewController autoresizesArchivedViewToFullSize="NO" preferredFramesPerSecond="30" id="09T-jw-ngQ" customClass="ViewController" sceneMemberID="viewController">
                     <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="Xhl-lN-SDP"/>
-                        <viewControllerLayoutGuide type="bottom" id="yQP-Tg-hsu"/>
+                        <viewControllerLayoutGuide type="top" id="lXL-Uw-rdg"/>
+                        <viewControllerLayoutGuide type="bottom" id="aEa-Jq-Rgd"/>
                     </layoutGuides>
-                    <glkView key="view" multipleTouchEnabled="YES" contentMode="scaleToFill" drawableDepthFormat="24" drawableMultisample="4X" id="7hg-gx-7q5">
-                        <rect key="frame" x="0.0" y="0.0" width="768" height="975"/>
+                    <glkView key="view" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" id="R93-kb-SdF">
+                        <rect key="frame" x="0.0" y="0.0" width="768" height="1024"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <segmentedControl opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="CfA-h6-CNb">
-                                <rect key="frame" x="270" y="917" width="123" height="29"/>
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="CfA-h6-CNb">
+                                <rect key="frame" x="359" y="959" width="123" height="29"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="123" id="qjR-U7-HY6"/>
+                                </constraints>
                                 <segments>
                                     <segment title="Flat"/>
                                     <segment title="Globe"/>
                                 </segments>
                                 <connections>
-                                    <action selector="changeViewType:" destination="YZN-DK-qWY" eventType="valueChanged" id="nh8-hm-tGm"/>
+                                    <action selector="changeViewType:" destination="09T-jw-ngQ" eventType="valueChanged" id="AF7-Xg-WUC"/>
                                 </connections>
                             </segmentedControl>
                         </subviews>
+                        <constraints>
+                            <constraint firstItem="aEa-Jq-Rgd" firstAttribute="top" secondItem="CfA-h6-CNb" secondAttribute="bottom" constant="37" id="QS8-Oz-PS1"/>
+                        </constraints>
                         <connections>
-                            <outlet property="delegate" destination="YZN-DK-qWY" id="I1u-83-HRR"/>
+                            <outlet property="delegate" destination="09T-jw-ngQ" id="HHp-Pf-nMi"/>
                         </connections>
                     </glkView>
-                    <simulatedTabBarMetrics key="simulatedBottomBarMetrics" translucent="NO"/>
+                    <connections>
+                        <outlet property="viewTypeSegments" destination="CfA-h6-CNb" id="oJJ-nT-ee5"/>
+                    </connections>
                 </glkViewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="qK7-zq-Ds4" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Dbq-DQ-iNi" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-361" y="-2215"/>
+            <point key="canvasLocation" x="350" y="-2054"/>
         </scene>
     </scenes>
     <color key="tintColor" red="0.67475406240000002" green="0.71933806600000005" blue="0.90892059950000004" alpha="1" colorSpace="calibratedRGB"/>

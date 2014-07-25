@@ -17,14 +17,14 @@
     return self;
 }
 
--(void) updateVertex:(GLKVector3) targetCenter
+-(BOOL) updateVertex:(GLKVector3) targetCenter
                 mode:(ViewType)viewType
          timeElapsed:(NSTimeInterval)timeElapsed
             duration:(NSTimeInterval)duration
                ratio:(float)ratio {
     
     if(duration<=0.0){
-        return;
+        return NO;
     }
 //    NSLog(@"inside update");
     GLKVector3 vrtx = self.center;
@@ -39,13 +39,14 @@
     
     if(GLKVector3Length(distanceC) == 0){
         //change complete
-        return;
+        return NO;
     }
     self.center = vrtx;
     
     if(duration<=timeElapsed){
         self.center= targetCenter;
     }
+    return YES;
     
 }
 

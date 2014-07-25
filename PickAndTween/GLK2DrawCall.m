@@ -1,6 +1,6 @@
 #import "GLK2DrawCall.h"
 #import "GLKVAObject.h"
-#import "TexImgFrameBuffer.h"
+#import "GLK2BufferObject.h"
 
 @implementation GLK2DrawCall
 {
@@ -26,24 +26,25 @@
 	return &clearColour[0];
 }
 
--(void)addVertices:(GLKVector3*)vertex{
-    self.vertices = vertex;
-    
-}
+
 
 -(void) drawWithMode:(GLuint) mode{
-    
+//    NSLog(@"VAO name %d", self.VAO.glName );
     glBindVertexArrayOES( self.VAO.glName );
-    glDrawArrays(mode, 0, self.numOfVerticesToDraw);
+//    NSLog(@"%d", self.numOfVerticesToDraw);
+    glDrawArrays(self.mode, 0, self.numOfVerticesToDraw);
     }
 
 -(void) drawWithElements:(GLuint) mode{
     
+    NSString* bufferType = [NSString stringWithFormat:@"%d",GL_ELEMENT_ARRAY_BUFFER];
+    GLuint _planeIndicesBuffer = [(GLK2BufferObject*)[self.VAO.VBOs objectForKey:bufferType] glName];
+//    NSLog(@"Inside draw: indices buffer %d, indices to draw %d", _planeIndicesBuffer, self.numOfVerticesToDraw);
+   
     glBindVertexArrayOES( self.VAO.glName );
-//    glDrawElements(GL_TRIANGLE_STRIP, sizeof(indices)/sizeof(GLubyte), GL_UNSIGNED_BYTE, (void*)0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _planeIndicesBuffer);
+    glDrawElements(GL_TRIANGLES, self.numOfVerticesToDraw, GL_UNSIGNED_INT, NULL);
 }
-
-
 
 -(void) setClearColourRed:(float) r green:(float) g blue:(float) b alpha:(float) a
 {
