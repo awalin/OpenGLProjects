@@ -23,7 +23,7 @@
     if (self) {
         glGenVertexArraysOES( 1, &glName );
 		self.VBOs = [[NSMutableDictionary alloc] init];
-        NSLog(@"VAO name= %d", glName);
+//        NSLog(@"VAO name= %d", glName);
     }
     return self;
 }
@@ -50,7 +50,7 @@
    
         [newVBO uploadElementArray:data numItems:numDataItems];
         
-         NSLog(@"element array buffer %d", newVBO.glName);
+//         NSLog(@"element array buffer %d", newVBO.glName);
     
         return newVBO;
         }

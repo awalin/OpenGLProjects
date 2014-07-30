@@ -9,10 +9,6 @@
 @class PNT_EarthPoint;
 
 
-@interface ViewController : GLKViewController
-
-@property (strong, nonatomic) GLKBaseEffect *effect;
-
 typedef struct {
     GLKVector3 positionCoords;
     GLKVector2 textureCoords;
@@ -33,17 +29,27 @@ typedef enum {
     RESET
 } ViewType;
 
+
+
+@interface ViewController : GLKViewController
+
+@property (strong, nonatomic) GLKBaseEffect *effect;
+
+
 @property BOOL viewChanged;
 @property ViewType viewType;
+
 @property CustomPoint *locations; // array of the planes
 @property CustomPoint *bars;
+@property CustomPoint *curves;
 
-@property NSMutableArray* tweens;
+@property NSMutableArray* earthTweens;
 @property NSMutableArray* barTweens;
-@property NSMutableArray* curvetweens;
+@property NSMutableArray* curveTweens;
 
 @property NSMutableArray* allLocations;
 @property NSMutableArray* allLines;
+@property NSMutableArray* allCurves;
 
 @property(nonatomic, retain) NSMutableArray* shapes;
 

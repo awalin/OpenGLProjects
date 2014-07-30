@@ -37,7 +37,9 @@
     int totalPlanes;
     int totalPoints;
     int totalBars;
+    int totalCurves;
     int totalLinePoints;
+    int totalCurvePoints;
     BOOL toRotate;
     float imageAspect;
     
@@ -59,6 +61,7 @@
     GLuint _planeIndicesBuffer;
     
     TexImgTweenFunction* tweenFunction;
+    int segmentsPerCurve;
     
 }
 
@@ -102,15 +105,22 @@
     self.bars = (CustomPoint*)malloc(totalLinePoints*sizeof(CustomPoint));
     self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     
-    self.tweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
+    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;
+    segmentsPerCurve = 20;
+    totalCurvePoints = totalCurves*(segmentsPerCurve+1);
+    self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
+    
+    
+    self.earthTweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
+    self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurvePoints];
     
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
     
     touchEnded = NO;
     friction = 0.90;
-    _duration = 2.0;
-    delay=0.0001;
+    _duration = 1.0;
+    delay=0.00001;
     velocity = GLKVector3Make(0,0,0);
     zoomscale = 1.0;
     
@@ -261,7 +271,7 @@
             self.locations[index].colorCoords = colorV;
             
             [self.allLocations insertObject:location atIndex:index];
-            [self.tweens insertObject:tween atIndex:index];
+            [self.earthTweens insertObject:tween atIndex:index];
             
         }
         
@@ -299,19 +309,136 @@
     
     [self initBars];
     
+    [self initCurves];
+    
+}
+
+/***
+ 
+ GLKVector4 UIcolor : RGB to HSV
+ 
+ // Define a new brush color
+ CGColorRef color = [UIColor colorWithHue:(CGFloat)[sender selectedSegmentIndex] / (CGFloat)kPaletteSize
+ saturation:kSaturation
+ brightness:kBrightness
+ alpha:1.0].CGColor;
+ const CGFloat *components = CGColorGetComponents(color);
+ 
+ // Defer to the OpenGL view to set the brush color
+ [(PaintingView *)self.view setBrushColorWithRed:components[0] green:components[1] blue:components[2]];
+ 
+ ***/
+
+
+-(GLKVector4)toRGBwithHue:(float)h saturation:(float)s value:(float)v alpha:(float)a {
+    CGColorRef color = [UIColor colorWithHue:h saturation:s brightness:v alpha:1.0].CGColor;
+    const CGFloat *components = CGColorGetComponents(color);
+    GLKVector4 rgb = GLKVector4Make(components[0], components[1], components[2], 1.0);
+    //    NSLog(@"Hue %f Red %f, Green %f, Blue %f", h, rgb.x, rgb.y, rgb.z);
+    return rgb;
+}
+
+
+-(void) initCurves{
+    
+    //create the centre source of all curve
+    PNT_EarthPoint* location0 = [[PNT_EarthPoint alloc] init];
+    
+    location0.theta  = GLKMathDegreesToRadians(_country[0].lat - 90);// 90 and 180 offset to match with earth view projection
+    location0.phi = GLKMathDegreesToRadians(_country[0].lon -180 );
+    location0.length = 0.0;
+    
+    GLfloat x1 = radius*sin(location0.theta)*cos(location0.phi);
+    GLfloat y1 = radius*sin(location0.theta)*sin(location0.phi);
+    GLfloat z1 = radius*cos(location0.theta);
+    location0.roundLoc = GLKVector3Make( y1, z1, x1 );
+    
+    float xp = 1-(180.0-_country[0].lon)/180.0;
+    float yp = 1-(90.0-_country[0].lat)/90.0;
+    
+    location0.flatLoc = GLKVector3Make(xp*imageAspect, yp, 0.0);
+    
+    //if globe mode
+    if(self.viewType==GLOBE){
+        location0.center = location0.roundLoc; // the end pointof the bezier curve
+    }
+    else {
+        location0.center = location0.flatLoc; // the end point of the bezier curve
+    }
+    
+    [self.allCurves insertObject:location0 atIndex:0];
+    
+    //now make the end points of all curves
+    for(int i=1;i<totalCurves; i++){
+        
+        PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
+        
+        location.theta  = GLKMathDegreesToRadians(_country[i].lat - 90);// 90 and 180 offset to match with earth view projection
+        location.phi = GLKMathDegreesToRadians(_country[i].lon -180 );
+        location.length = 0.0;
+        
+        GLfloat x1 = radius*sin(location.theta)*cos(location.phi);
+        GLfloat y1 = radius*sin(location.theta)*sin(location.phi);
+        GLfloat z1 = radius*cos(location.theta);
+        location.roundLoc = GLKVector3Make( y1, z1, x1 );
+        
+        float xp = 1-(180.0-_country[i].lon)/180.0;
+        float yp = 1-(90.0-_country[i].lat)/90.0;
+        location.flatLoc = GLKVector3Make(xp*imageAspect, yp, 0.0);
+        
+        float L = 1.0;
+        float S = 0.5;
+        float hue =  120;
+        GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
+        
+        //there will be a lot more tweens. For each curve, segment+1 number of tweens and points
+        TexImgTween* tween = [[TexImgTween alloc] init];
+        tween.planeId = i;
+        tween.targetPhi = location.phi;
+        tween.targetTheta = location.theta;
+        tween.duration = _duration;
+        tween.delay = (180.0f-fabs(_country[i].lat))*delay; //i*delay;
+        tween.globeCenter = location.roundLoc;
+        tween.wallCenter =  location.flatLoc;
+        tween.duration = _duration;
+        [self.barTweens insertObject:tween atIndex:i*2];
+        
+        //       NSLog(@"color: %f %f %f", col.x, col.y, col.z);
+        
+        //there will be a lot more curves
+        self.curves[i*segmentsPerCurve].colorCoords = col;
+        
+        //if globe mode
+        if(self.viewType==GLOBE){
+            location.center = location.roundLoc; // the end pointof the bezier curve
+            self.curves[i*segmentsPerCurve].positionCoords = location0.roundLoc; //the source point of the bezier curve
+        } else {
+            location.center = location.flatLoc; // the end point of the bezier curve
+            self.curves[i*segmentsPerCurve].positionCoords = location0.flatLoc; // the source point of the bezier curve
+        }
+        
+        [location createBezierStart:location0.center end:location.center view:self.viewType segments:segmentsPerCurve];
+        
+        for(int j =0; j<segmentsPerCurve; j++){
+            self.curves[i*segmentsPerCurve+j].positionCoords = location.bezierPoints[j+4];
+            self.curves[i*segmentsPerCurve+j].colorCoords = col;
+        }
+        
+        //thse two are control points, now make the segments
+        [self.allCurves insertObject:location atIndex:i+1];
+        
+    }
+    
 }
 
 
 -(void) initBars{
     
-    radius = 1.0;
-    
-    int count = 0;
     for(int i=0;i<totalBars; i++){
         
         PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
         
-        location.theta  = GLKMathDegreesToRadians(_population[i].lat - 90);
+        location.theta  = GLKMathDegreesToRadians(_population[i].lat - 90);// 90 and 180 offset to match with earth view projection
         location.phi = GLKMathDegreesToRadians(_population[i].lon -180 );
         location.length = _population[i].magnitude;
         
@@ -325,79 +452,57 @@
         
         location.flatLoc = GLKVector3Make(xp*imageAspect, yp, 0.0);
         
-        [self.allLines insertObject:location atIndex:i];
+        float L = 1.0;
+        float S = 0.5;
         
-        float L = 100.0*location.length;
-        float S = location.length*10;
-        float c = (1- fabs(2*L-1))*S;
-        int hue = location.length*360/60;
-        float X = c*(1- abs(hue%2-1));
-        float m = L - 0.5*c;
+        float hue =  (pow(M_E,location.length))*0.5;//240.0f+ 120.0f*(1-pow(M_E,location.length));
         
-        //        NSLog(@"Z=%f, X=%f C=%f", z, X, c);
-        GLKVector3 col;
-        
-        if(hue>=0 && hue<1){
-            col = GLKVector3Make(c+m,X+m,0+m);
-        }else if(hue>=1 && hue<2){
-            col = GLKVector3Make(X+m,c+m,0+m);
-        }else if( hue>=2 && hue<3){
-            col = GLKVector3Make(0+m,c+m,X+m);
-        }else if( hue>=3 && hue<4){
-            col = GLKVector3Make(0+m,X+m,c+m);
-        }else if (hue>=4 && hue<5){
-            col = GLKVector3Make(X+m,0+m,c+m);
-        }else if(hue>=5 && hue<6){
-            col = GLKVector3Make(c+m,0+m,X+m);
-        }
+        GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
         
         GLKVector3 startP = location.roundLoc;
         GLKVector3 endP = GLKVector3Normalize(GLKVector3Subtract(location.roundLoc,GLKVector3Make(0,0,0)));
         endP = GLKVector3Add(GLKVector3MultiplyScalar(endP,location.length),startP);
         
         TexImgTween* tween = [[TexImgTween alloc] init];
-        tween.planeId = count;
+        tween.planeId = i;
         tween.targetPhi = location.phi;
         tween.targetTheta = location.theta;
         tween.duration = _duration;
-        tween.delay = count*delay;
+        tween.delay = (180.0f-fabs(_population[i].lat))*delay; //i*delay;
         tween.globeCenter = location.roundLoc;
         tween.wallCenter =  location.flatLoc;
         tween.duration = _duration;
-        [self.barTweens insertObject:tween atIndex:count];
+        [self.barTweens insertObject:tween atIndex:i*2];
         
         TexImgTween* tween2 = [[TexImgTween alloc] init];
-        tween2.planeId = count;
+        tween2.planeId = i;
         tween2.targetPhi = location.phi;
         tween2.targetTheta = location.theta;
         tween2.duration = _duration;
-        tween2.delay = count*delay;
+        tween2.delay = tween.delay;
         tween2.globeCenter = endP;
         tween2.wallCenter =   GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
         tween2.duration = _duration;
-        [self.barTweens insertObject:tween2 atIndex:(count+1)];
+        [self.barTweens insertObject:tween2 atIndex:(i*2+1)];
         //       NSLog(@"color: %f %f %f", col.x, col.y, col.z);
+        
+        self.bars[i*2].colorCoords = col;
+        self.bars[i*2+1].colorCoords = col;
         
         //if globe mode
         if(self.viewType==GLOBE){
-            self.bars[count*2].positionCoords = startP;
-            self.bars[count*2].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
-          
-            self.bars[count*2+1].positionCoords = endP;
-            self.bars[count*2+1].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
-            count++;
+            location.center = location.roundLoc;
+            self.bars[i*2].positionCoords = location.roundLoc;
+            self.bars[i*2+1].positionCoords = endP;
         }
-        else if(self.viewType==WALL){
-            self.bars[count*2].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
-            self.bars[count*2].positionCoords = location.flatLoc;
-       
-            self.bars[count*2+1].positionCoords = GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
-            self.bars[count*2+1].colorCoords = GLKVector4Make(col.x/255, col.y/255, col.z/255, 1.0);
-         
+        else {
+            location.center = location.flatLoc;
+            self.bars[i*2].positionCoords = location.flatLoc;
+            self.bars[i*2+1].positionCoords = GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
         }
-       
         
-        //        NSLog(@"%f, %f, %f", self.bars[i].positionCoords.x, self.bars[i].positionCoords.y ,self.bars[i].positionCoords.z);
+        [self.allLines insertObject:location atIndex:i];
+        
     }
     
     
@@ -422,38 +527,32 @@
     NSDate* currentTime = [NSDate date];
     
     for(int index=0; index<totalPoints; index++){
-        TexImgTween* tween = [self.tweens objectAtIndex:index];
-        PNT_EarthPoint* plane = [self.allLocations objectAtIndex:index];
+        TexImgTween* tween = [self.earthTweens objectAtIndex:index];
         tween.startTime = currentTime;
         //        NSLog(@"twn start time %@", tween.startTime);
         if(self.viewType==GLOBE){
-            [[self.tweens objectAtIndex:index] setTargetCenter: plane.roundLoc];
-            [[self.tweens objectAtIndex:index] setSourceCenter: plane.flatLoc];
+            [tween setTargetCenter: tween.globeCenter];
+            [tween setSourceCenter: tween.wallCenter];
         } else if(self.viewType==WALL){
-            [[self.tweens objectAtIndex:index] setTargetCenter: plane.flatLoc];
-            [[self.tweens objectAtIndex:index] setSourceCenter: plane.roundLoc];
+            [tween setTargetCenter: tween.wallCenter];
+            [tween setSourceCenter: tween.globeCenter];
         }
     }
-    for(int index=0; index<totalBars; index++){
+    for(int index=0; index<totalBars*2; index++){
         TexImgTween* tween = [self.barTweens objectAtIndex:index];
-        PNT_EarthPoint* line = [self.allLines objectAtIndex:index];
         tween.startTime = currentTime;
-        //        NSLog(@"twn start time %@", tween.startTime);
         if(self.viewType==GLOBE){
-            [[self.barTweens objectAtIndex:index] setTargetCenter: line.roundLoc];
-            [[self.barTweens objectAtIndex:index] setSourceCenter: line.flatLoc];
+            [tween setTargetCenter: tween.globeCenter];
+            [tween setSourceCenter: tween.wallCenter];
         } else if(self.viewType==WALL){
-            [[self.barTweens objectAtIndex:index] setTargetCenter: line.flatLoc];
-            [[self.barTweens objectAtIndex:index] setSourceCenter: line.roundLoc];
+            [tween setTargetCenter: tween.wallCenter];
+            [tween setSourceCenter: tween.globeCenter];
         }
     }
 }
 
 -(void) setDuration:(float) val {
     _duration = val;
-    self.viewChanged=NO;
-    
-    self.viewChanged = YES;
 }
 
 
@@ -491,11 +590,13 @@
     [self setUpEarth];
     
     [self setUpLines];
+    
+    [self setUpCurves];
 }
 
 -(void) setUpEarth{
     
- //[self makeGlobe];
+    //[self makeGlobe];
     if(self.viewType==GLOBE) {
         [self makeGlobe];
     }else {
@@ -566,6 +667,34 @@
     
 }
 
+-(void) setUpCurves{
+    
+    GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
+    drawObject.mode = GL_LINE_STRIP;
+    
+    drawObject.numOfVerticesToDraw = totalCurvePoints;
+    drawObject.VAO = [[GLKVAObject alloc] init];
+    
+    [drawObject.VAO addVBOForAttribute:GLKVertexAttribPosition
+                        filledWithData:self.curves //addres of the bytes to copy
+                           numVertices:drawObject.numOfVerticesToDraw
+                           numOfFloats:3 //floats in GLKVector3
+                                stride:sizeof(CustomPoint)
+                                offset:(void *)offsetof(CustomPoint, positionCoords)];
+    
+    
+    [drawObject.VAO addVBOForAttribute:GLKVertexAttribColor
+                        filledWithData:self.curves //addres of the bytes to copy
+                           numVertices:drawObject.numOfVerticesToDraw
+                           numOfFloats:4
+                                stride:sizeof(CustomPoint)
+                                offset:(void *)offsetof(CustomPoint, colorCoords) ];
+    
+    [self.shapes addObject: drawObject];
+    
+    
+}
+
 -(void) setDelay:(float) val {
     
     delay = val;
@@ -592,7 +721,7 @@
     //    NSLog(@"inside animation");
     for(int index =0; index < totalPoints; index++){
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
-        TexImgTween* tween = [self.tweens objectAtIndex:index];
+        TexImgTween* tween = [self.earthTweens objectAtIndex:index];
         float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
         durationRemaining = tween.duration - timePassedSinceStart;
         float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
@@ -614,18 +743,18 @@
     }
     
     
-    for(int index =0; index < totalLinePoints/2; index++){
+    for(int index =0; index < totalBars; index++){
         PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
         TexImgTween* tween = [self.barTweens objectAtIndex:index];
         float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
         durationRemaining = _duration - timePassedSinceStart;
         float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
-        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
+        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween.delay duration:_duration];
         
         if(timePassedSinceStart > tween.delay){
             BOOL isUpdated = [location updateVertex:tween.targetCenter
                                                mode:self.viewType
-                                        timeElapsed: timePassedSinceStart
+                                        timeElapsed: timePassedSinceStart-tween.delay
                                            duration: _duration
                                               ratio:ratio];
             if(isUpdated==NO){
@@ -634,7 +763,18 @@
                 toRotate=NO;
             }
         }
-        self.bars[index].positionCoords = location.center;
+        self.bars[index*2].positionCoords = location.center;
+        
+        if(self.viewType==GLOBE){
+            GLKVector3 startP = location.center;
+            GLKVector3 endP = GLKVector3Normalize(GLKVector3Subtract(location.center,GLKVector3Make(0,0,0)));
+            endP = GLKVector3Add(GLKVector3MultiplyScalar(endP,location.length),startP);
+            self.bars[index*2+1].positionCoords = endP;
+            
+        } else if(self.viewType==WALL){
+            self.bars[index*2+1].positionCoords = GLKVector3Make(location.center.x, location.center.y, location.length);
+        }
+        
     }
 }
 
@@ -669,7 +809,10 @@
     
     
     [self renderEarth];
-    [self renderBars];
+    
+    //    [self renderBars];
+    
+    [self renderCurves];
 }
 
 
@@ -687,39 +830,62 @@
         //update lines if needed
         GLK2DrawCall* drawObject = [self.shapes objectAtIndex:1];
         [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
-                                   filledWithData:self.bars //addres of the bytes to copy
-                                      numVertices:drawObject.numOfVerticesToDraw
-                                      numOfFloats:3 //floats in GLKVector3
-                                           stride:sizeof(CustomPoint)
-                                           offset:(void *)offsetof(CustomPoint, positionCoords)];
-            
+                               filledWithData:self.bars //addres of the bytes to copy
+                                  numVertices:drawObject.numOfVerticesToDraw
+                                  numOfFloats:3 //floats in GLKVector3
+                                       stride:sizeof(CustomPoint)
+                                       offset:(void *)offsetof(CustomPoint, positionCoords)];
+        
     }
     
-    if(self.viewType==GLOBE && toRotate==YES)
-        modelrotation.y -= 0.2;
-//    else {
-//        modelrotation.y= 0;
-//    }
+    //    if(self.viewType==GLOBE && toRotate==YES)
+    //        modelrotation.y -= 0.2;
     
 }
 
-/***
- 
-GLKVector4 UIcolor : RGB to HSV
- -(GLKVector4)toRGBwithHue:(float)h saturation:(float)s value:(float)v alpha:(float)a {
- CGFloat r, g, b, alpha;
- UIColor *color = [UIColor colorWithHue:h saturation:s brightness:v alpha:a];
- [color getRed:&r green:&g blue:&b alpha:&alpha];
- GLKVector4 rgb = GLKVector4Make(r, g, b, a);
- return rgb;
- }
- ***/
-
+-(void) renderCurves{
+    
+    if( self.shapes == nil || self.shapes.count < 1 ){
+		NSLog(@"no drawcalls specified; rendering nothing");
+        return;
+    }
+    
+    //for( GLK2DrawCall* drawCall in self.shapes )
+    GLK2DrawCall* drawCall = [self.shapes objectAtIndex:2];
+    {
+        if( drawCall.VAO != nil ){
+            self.effect.texture2d0.enabled = NO;
+            [self.effect prepareToDraw];
+            glDisableVertexAttribArray(GLKVertexAttribTexCoord0);
+            glEnableVertexAttribArray(GLKVertexAttribColor);
+            glEnable(GL_BLEND);
+            glEnable(GL_LINE_SMOOTH);
+            glLineWidth(1.0f);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            
+            
+            glBindVertexArrayOES( drawCall.VAO.glName );
+            for(int i = 0; i < totalCurves; i++){
+                glDrawArrays(GL_LINE_STRIP, i*(segmentsPerCurve), segmentsPerCurve+1);
+                
+            }
+            glDisable(GL_LINE_SMOOTH);
+            
+        }
+        else {
+            NSLog(@"not available");
+        }
+    }
+    
+    
+    
+    
+}
 
 
 -(void) renderEarth {
     
-  if( self.shapes == nil || self.shapes.count < 1 ){
+    if( self.shapes == nil || self.shapes.count < 1 ){
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
     }
@@ -729,7 +895,7 @@ GLKVector4 UIcolor : RGB to HSV
     {
         if( drawCall.VAO != nil ){
             self.effect.texture2d0.enabled = YES;
-//            glDisableVertexAttribArray(GLKVertexAttribColor);
+            //            glDisableVertexAttribArray(GLKVertexAttribColor);
             [self.effect prepareToDraw];
             [drawCall drawWithElements:GL_TRIANGLES];
         }
@@ -743,7 +909,7 @@ GLKVector4 UIcolor : RGB to HSV
 -(void) renderBars{
     
     //    glBindVertexArrayOES(0);
-
+    
     if( self.shapes == nil || self.shapes.count < 1 ){
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
@@ -834,6 +1000,7 @@ GLKVector4 UIcolor : RGB to HSV
     
 }
 
+static const LatLonBar _country[] = { { 38, -97 }, { 60, -95 }, { 23, -102 }, { -10, -55 }, { 54, -2 }, { 40, -4}, { 46, 2 }, { 20, 77 }, { 35, 105 }, { 60, 100 }, { 36, 138 } };
 
 static const LatLonBar _population[] = {
     6,159,0.001,

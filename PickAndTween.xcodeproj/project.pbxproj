@@ -10,6 +10,7 @@
 		E7293763197655F100535F02 /* earth-map.png in Resources */ = {isa = PBXBuildFile; fileRef = E7293762197655F100535F02 /* earth-map.png */; };
 		E72937661977292900535F02 /* PNT_EarthPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = E72937651977292900535F02 /* PNT_EarthPoint.m */; };
 		E730F5C0197EC9BA00A4A79E /* earthbw.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */; };
+		E7553E981988511600DAE05C /* PNT_BezierCurvePoint.m in Sources */ = {isa = PBXBuildFile; fileRef = E7553E971988511600DAE05C /* PNT_BezierCurvePoint.m */; };
 		E7E78B4719633E0F00042D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4619633E0F00042D12 /* Foundation.framework */; };
 		E7E78B4919633E0F00042D12 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4819633E0F00042D12 /* CoreGraphics.framework */; };
 		E7E78B4B19633E0F00042D12 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4A19633E0F00042D12 /* UIKit.framework */; };
@@ -27,7 +28,6 @@
 		E7E78B9A19633ECC00042D12 /* GLK2DrawCall.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B7D19633ECC00042D12 /* GLK2DrawCall.m */; };
 		E7E78B9B19633ECC00042D12 /* GLKVAObject.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B7F19633ECC00042D12 /* GLKVAObject.m */; };
 		E7E78B9D19633ECC00042D12 /* main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E7E78B8119633ECC00042D12 /* main.storyboard */; };
-		E7E78BA419633ECC00042D12 /* TexImgPlane.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B8F19633ECC00042D12 /* TexImgPlane.m */; };
 		E7E78BA519633ECC00042D12 /* TexImgTween.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B9119633ECC00042D12 /* TexImgTween.m */; };
 		E7E78BA619633ECC00042D12 /* TexImgTweenFunction.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B9319633ECC00042D12 /* TexImgTweenFunction.m */; };
 		E7E78BA719633ECC00042D12 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E7E78B9519633ECC00042D12 /* ViewController.m */; };
@@ -50,6 +50,8 @@
 		E72937641977292900535F02 /* PNT_EarthPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PNT_EarthPoint.h; sourceTree = "<group>"; };
 		E72937651977292900535F02 /* PNT_EarthPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PNT_EarthPoint.m; sourceTree = "<group>"; };
 		E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = earthbw.jpeg; path = ../../../Desktop/earthbw.jpeg; sourceTree = "<group>"; };
+		E7553E961988511600DAE05C /* PNT_BezierCurvePoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PNT_BezierCurvePoint.h; sourceTree = "<group>"; };
+		E7553E971988511600DAE05C /* PNT_BezierCurvePoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PNT_BezierCurvePoint.m; sourceTree = "<group>"; };
 		E7E78B4319633E0F00042D12 /* PickAndTween.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PickAndTween.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7E78B4619633E0F00042D12 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		E7E78B4819633E0F00042D12 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -75,8 +77,6 @@
 		E7E78B7F19633ECC00042D12 /* GLKVAObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLKVAObject.m; sourceTree = "<group>"; };
 		E7E78B8119633ECC00042D12 /* main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = main.storyboard; sourceTree = "<group>"; };
 		E7E78B8319633ECC00042D12 /* TexImg-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "TexImg-Prefix.pch"; sourceTree = "<group>"; };
-		E7E78B8E19633ECC00042D12 /* TexImgPlane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TexImgPlane.h; sourceTree = "<group>"; };
-		E7E78B8F19633ECC00042D12 /* TexImgPlane.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TexImgPlane.m; sourceTree = "<group>"; };
 		E7E78B9019633ECC00042D12 /* TexImgTween.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TexImgTween.h; sourceTree = "<group>"; };
 		E7E78B9119633ECC00042D12 /* TexImgTween.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TexImgTween.m; sourceTree = "<group>"; };
 		E7E78B9219633ECC00042D12 /* TexImgTweenFunction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TexImgTweenFunction.h; sourceTree = "<group>"; };
@@ -158,8 +158,6 @@
 				E7E78B7E19633ECC00042D12 /* GLKVAObject.h */,
 				E7E78B7F19633ECC00042D12 /* GLKVAObject.m */,
 				E7E78B8319633ECC00042D12 /* TexImg-Prefix.pch */,
-				E7E78B8E19633ECC00042D12 /* TexImgPlane.h */,
-				E7E78B8F19633ECC00042D12 /* TexImgPlane.m */,
 				E7E78B9019633ECC00042D12 /* TexImgTween.h */,
 				E7E78B9119633ECC00042D12 /* TexImgTween.m */,
 				E7E78B9219633ECC00042D12 /* TexImgTweenFunction.h */,
@@ -171,6 +169,8 @@
 				E7E78B4D19633E0F00042D12 /* Supporting Files */,
 				E72937641977292900535F02 /* PNT_EarthPoint.h */,
 				E72937651977292900535F02 /* PNT_EarthPoint.m */,
+				E7553E961988511600DAE05C /* PNT_BezierCurvePoint.h */,
+				E7553E971988511600DAE05C /* PNT_BezierCurvePoint.m */,
 			);
 			path = PickAndTween;
 			sourceTree = "<group>";
@@ -309,11 +309,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E7E78BA419633ECC00042D12 /* TexImgPlane.m in Sources */,
 				E7E78B9919633ECC00042D12 /* GLK2BufferObject.m in Sources */,
 				E72937661977292900535F02 /* PNT_EarthPoint.m in Sources */,
 				E7E78BA519633ECC00042D12 /* TexImgTween.m in Sources */,
 				E7E78BA619633ECC00042D12 /* TexImgTweenFunction.m in Sources */,
+				E7553E981988511600DAE05C /* PNT_BezierCurvePoint.m in Sources */,
 				E7E78B9B19633ECC00042D12 /* GLKVAObject.m in Sources */,
 				E7E78BA719633ECC00042D12 /* ViewController.m in Sources */,
 				E7E78B5319633E0F00042D12 /* main.m in Sources */,

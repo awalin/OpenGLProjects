@@ -51,7 +51,7 @@
     self = [super init];
     if (self) {
         glGenBuffers(1, &glName);
-         NSLog(@"VBO Name = %d", glName);
+//         NSLog(@"VBO Name = %d", glName);
     }
     return self;
 }

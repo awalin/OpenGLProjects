@@ -19,6 +19,9 @@
 @property GLKVector3 roundLoc;
 @property GLKVector2 texCoord;
 @property GLKVector3 center;
+
+@property GLKVector3 *bezierPoints;
+
 @property int planeId;
 @property int colorId;
 
@@ -45,6 +48,8 @@
          timeElapsed:(NSTimeInterval)timeElapsed
             duration:(NSTimeInterval)duration
                ratio:(float)ratio;
+
+-(void) createBezierStart:(GLKVector3) start end:(GLKVector3) end view:(ViewType) vType segments:(int)segments;
 
 
 
