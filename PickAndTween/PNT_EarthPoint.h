@@ -11,6 +11,7 @@
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 #import "ViewController.h"
+#import "TexImgTween.h"
 
 @interface PNT_EarthPoint : NSObject
 
@@ -49,8 +50,17 @@
             duration:(NSTimeInterval)duration
                ratio:(float)ratio;
 
--(void) createBezierStart:(GLKVector3) start end:(GLKVector3) end view:(ViewType) vType segments:(int)segments;
+-(void) createBezierStart:(PNT_EarthPoint*) start
+                      end:(PNT_EarthPoint*) end
+                     view:(ViewType)vType
+                 segments:(int)segments;
 
-
+-(BOOL)updateBezierStart:(TexImgTween*)targetStart
+                     end:(TexImgTween*) targetEnd
+                    view:(ViewType)vType
+                segments:(int)segments
+             timeElapsed:(NSTimeInterval)timeElapsed
+                duration:(NSTimeInterval)duration
+                   ratio:(float)ratio;
 
 @end

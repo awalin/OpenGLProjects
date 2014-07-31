@@ -106,14 +106,14 @@
     self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     
     totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;
-    segmentsPerCurve = 20;
+    segmentsPerCurve = 30;
     totalCurvePoints = totalCurves*(segmentsPerCurve+1);
     self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
     
     
     self.earthTweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
-    self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurvePoints];
+    self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];
     
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
     
@@ -141,7 +141,7 @@
     self.pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(zoomWithPinchGesture:)];
     [self.view addGestureRecognizer:self.pinchRecognizer];
     self.viewType = [self.viewTypeSegments selectedSegmentIndex];
-    NSLog(@"%d", self.viewType);
+    //    NSLog(@"%d", self.viewType);
     
     [self initData];
     [self setupGL];
@@ -368,13 +368,24 @@
     
     [self.allCurves insertObject:location0 atIndex:0];
     
+    TexImgTween* tween = [[TexImgTween alloc] init];
+    tween.planeId = 0;
+    tween.targetPhi = location0.phi;
+    tween.targetTheta = location0.theta;
+    tween.duration = _duration;
+    tween.delay = (180.0f-fabs(_country[0].lat))*delay; //i*delay;
+    tween.globeCenter = location0.roundLoc;
+    tween.wallCenter =  location0.flatLoc;
+    tween.duration = _duration;
+    [self.curveTweens insertObject:tween atIndex:0];
+    
     //now make the end points of all curves
-    for(int i=1;i<totalCurves; i++){
+    for(int i=0;i<totalCurves; i++){
         
         PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
         
-        location.theta  = GLKMathDegreesToRadians(_country[i].lat - 90);// 90 and 180 offset to match with earth view projection
-        location.phi = GLKMathDegreesToRadians(_country[i].lon -180 );
+        location.theta  = GLKMathDegreesToRadians(_country[i+1].lat - 90);// 90 and 180 offset to match with earth view projection
+        location.phi = GLKMathDegreesToRadians(_country[i+1].lon -180 );
         location.length = 0.0;
         
         GLfloat x1 = radius*sin(location.theta)*cos(location.phi);
@@ -382,28 +393,26 @@
         GLfloat z1 = radius*cos(location.theta);
         location.roundLoc = GLKVector3Make( y1, z1, x1 );
         
-        float xp = 1-(180.0-_country[i].lon)/180.0;
-        float yp = 1-(90.0-_country[i].lat)/90.0;
+        float xp = 1-(180.0-_country[i+1].lon)/180.0;
+        float yp = 1-(90.0-_country[i+1].lat)/90.0;
         location.flatLoc = GLKVector3Make(xp*imageAspect, yp, 0.0);
         
         float L = 1.0;
         float S = 0.5;
-        float hue =  120;
+        float hue =  0.6*i/totalCurves;
         GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
         
         //there will be a lot more tweens. For each curve, segment+1 number of tweens and points
         TexImgTween* tween = [[TexImgTween alloc] init];
-        tween.planeId = i;
+        tween.planeId = i+1;
         tween.targetPhi = location.phi;
         tween.targetTheta = location.theta;
         tween.duration = _duration;
-        tween.delay = (180.0f-fabs(_country[i].lat))*delay; //i*delay;
+        tween.delay = (180.0f-fabs(_country[i+1].lat))*delay; //i*delay;
         tween.globeCenter = location.roundLoc;
         tween.wallCenter =  location.flatLoc;
         tween.duration = _duration;
-        [self.barTweens insertObject:tween atIndex:i*2];
-        
-        //       NSLog(@"color: %f %f %f", col.x, col.y, col.z);
+        [self.curveTweens insertObject:tween atIndex:i+1];
         
         //there will be a lot more curves
         self.curves[i*segmentsPerCurve].colorCoords = col;
@@ -411,17 +420,20 @@
         //if globe mode
         if(self.viewType==GLOBE){
             location.center = location.roundLoc; // the end pointof the bezier curve
-            self.curves[i*segmentsPerCurve].positionCoords = location0.roundLoc; //the source point of the bezier curve
+            self.curves[i*(segmentsPerCurve+1)].positionCoords = location0.roundLoc; //the source point of the bezier curve
+            [location createBezierStart:location0 end:location view:self.viewType segments:segmentsPerCurve];
+            
         } else {
             location.center = location.flatLoc; // the end point of the bezier curve
-            self.curves[i*segmentsPerCurve].positionCoords = location0.flatLoc; // the source point of the bezier curve
+            self.curves[i*(segmentsPerCurve+1)].positionCoords = location0.flatLoc; // the source point of the bezier curve
+            [location createBezierStart:location0 end:location view:self.viewType segments:segmentsPerCurve];
         }
         
-        [location createBezierStart:location0.center end:location.center view:self.viewType segments:segmentsPerCurve];
+        [location createBezierStart:location0 end:location view:self.viewType segments:segmentsPerCurve];
         
-        for(int j =0; j<segmentsPerCurve; j++){
-            self.curves[i*segmentsPerCurve+j].positionCoords = location.bezierPoints[j+4];
-            self.curves[i*segmentsPerCurve+j].colorCoords = col;
+        for(int j=0; j<=segmentsPerCurve; j++){
+            self.curves[i*(segmentsPerCurve+1)+j].positionCoords = location.bezierPoints[j+4];
+            self.curves[i*(segmentsPerCurve+1)+j].colorCoords = col;
         }
         
         //thse two are control points, now make the segments
@@ -538,8 +550,22 @@
             [tween setSourceCenter: tween.globeCenter];
         }
     }
+    //bars
     for(int index=0; index<totalBars*2; index++){
         TexImgTween* tween = [self.barTweens objectAtIndex:index];
+        tween.startTime = currentTime;
+        if(self.viewType==GLOBE){
+            [tween setTargetCenter: tween.globeCenter];
+            [tween setSourceCenter: tween.wallCenter];
+        } else if(self.viewType==WALL){
+            [tween setTargetCenter: tween.wallCenter];
+            [tween setSourceCenter: tween.globeCenter];
+        }
+    }
+    
+    //arcs
+    for(int index=0; index<totalCurves+1; index++){
+        TexImgTween* tween = [self.curveTweens objectAtIndex:index];
         tween.startTime = currentTime;
         if(self.viewType==GLOBE){
             [tween setTargetCenter: tween.globeCenter];
@@ -776,6 +802,58 @@
         }
         
     }
+    
+    //animate curves
+    TexImgTween* tween0 = [self.curveTweens objectAtIndex:0];
+    
+    //update the center of all the arcs
+    PNT_EarthPoint* location = [self.allCurves objectAtIndex:0];
+    float timePassedSinceStart = -[tween0.startTime timeIntervalSinceNow];
+    durationRemaining = _duration - timePassedSinceStart;
+    float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
+    ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween0.delay duration:_duration];
+    
+    if(timePassedSinceStart > tween0.delay){
+        BOOL isUpdated = [location updateVertex:tween0.targetCenter
+                                           mode:self.viewType
+                                    timeElapsed: timePassedSinceStart-tween0.delay
+                                       duration: _duration
+                                          ratio:ratio];
+        if(isUpdated==NO){
+            toRotate = YES;
+        }else {
+            toRotate=NO;
+        }
+    }
+    self.curves[0].positionCoords = location.center;
+    
+    //now update the rest of them
+    for(int index=1; index < totalCurves; index++){
+        PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
+        TexImgTween* tween = [self.curveTweens objectAtIndex:index];
+        float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
+        durationRemaining = _duration - timePassedSinceStart;
+        float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
+        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween.delay duration:_duration];
+        
+        if(timePassedSinceStart > tween.delay){
+            BOOL isUpdated=[location updateBezierStart:tween0
+                                                   end:tween
+                                                  view:self.viewType
+                                              segments:segmentsPerCurve
+                                           timeElapsed: timePassedSinceStart-tween.delay
+                                              duration: _duration
+                                                 ratio:ratio];
+            if(isUpdated==NO){
+                toRotate = YES;
+            }else {
+                toRotate=NO;
+            }
+        }
+        for(int j=0; j<=segmentsPerCurve+4; j++){ // segment+1+4 control points
+            self.curves[j].positionCoords = location.bezierPoints[j];
+        }
+    }
 }
 
 
@@ -810,7 +888,7 @@
     
     [self renderEarth];
     
-    //    [self renderBars];
+    [self renderBars];
     
     [self renderCurves];
 }
@@ -835,7 +913,15 @@
                                   numOfFloats:3 //floats in GLKVector3
                                        stride:sizeof(CustomPoint)
                                        offset:(void *)offsetof(CustomPoint, positionCoords)];
-        
+       //update curves
+       drawObject = [self.shapes objectAtIndex:2];
+       [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
+                               filledWithData:self.curves //addres of the bytes to copy
+                                  numVertices:drawObject.numOfVerticesToDraw
+                                  numOfFloats:3 //floats in GLKVector3
+                                       stride:sizeof(CustomPoint)
+                                       offset:(void *)offsetof(CustomPoint, positionCoords)];
+
     }
     
     //    if(self.viewType==GLOBE && toRotate==YES)
@@ -866,7 +952,7 @@
             
             glBindVertexArrayOES( drawCall.VAO.glName );
             for(int i = 0; i < totalCurves; i++){
-                glDrawArrays(GL_LINE_STRIP, i*(segmentsPerCurve), segmentsPerCurve+1);
+                glDrawArrays(GL_LINE_STRIP, i*(segmentsPerCurve+1), segmentsPerCurve+1);
                 
             }
             glDisable(GL_LINE_SMOOTH);
