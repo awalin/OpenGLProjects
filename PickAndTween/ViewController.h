@@ -29,6 +29,10 @@ typedef enum {
     RESET
 } ViewType;
 
+typedef enum {
+    BAR,
+    ARC
+} BarOrArc;
 
 
 @interface ViewController : GLKViewController
@@ -38,6 +42,7 @@ typedef enum {
 
 @property BOOL viewChanged;
 @property ViewType viewType;
+@property BarOrArc barOrArc;
 
 @property CustomPoint *locations; // array of the planes
 @property CustomPoint *bars;
@@ -59,7 +64,7 @@ typedef enum {
 @property double longMn;
 
 @property IBOutlet UISegmentedControl* viewTypeSegments;
-
+@property IBOutlet UISegmentedControl* barOrArcSegments;
 @property UIPanGestureRecognizer *panRecognizer;
 @property UIPinchGestureRecognizer *pinchRecognizer;
 @property(nonatomic,retain) EAGLContext* localContext;
@@ -72,5 +77,6 @@ typedef enum {
 -(void) makeGlobe;
 -(void) resetView;
 -(void) changeView:(ViewType)viewType;
+-(IBAction)swapBarOrArc:(id)sender;
 -(IBAction) changeViewType:(id)sender;
 -(void)setupGL;@end

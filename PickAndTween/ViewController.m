@@ -100,17 +100,16 @@
     self.allLocations = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     
     totalBars = (sizeof(_population)/sizeof(_population[0]));
-    //    NSLog(@"total bars %d", totalBars);
     totalLinePoints = 2*totalBars;
     self.bars = (CustomPoint*)malloc(totalLinePoints*sizeof(CustomPoint));
     self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     
-    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;
     segmentsPerCurve = 30;
+    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;
     totalCurvePoints = totalCurves*(segmentsPerCurve+1);
     self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
-    
-    
+    self.allCurves = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];//all the curves and the centre point
+
     self.earthTweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];
@@ -119,7 +118,7 @@
     
     touchEnded = NO;
     friction = 0.90;
-    _duration = 1.0;
+    _duration = 0.5;
     delay=0.00001;
     velocity = GLKVector3Make(0,0,0);
     zoomscale = 1.0;
@@ -141,6 +140,8 @@
     self.pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(zoomWithPinchGesture:)];
     [self.view addGestureRecognizer:self.pinchRecognizer];
     self.viewType = [self.viewTypeSegments selectedSegmentIndex];
+    self.barOrArc = [self.barOrArcSegments selectedSegmentIndex];
+
     //    NSLog(@"%d", self.viewType);
     
     [self initData];
@@ -343,6 +344,7 @@
     
     //create the centre source of all curve
     PNT_EarthPoint* location0 = [[PNT_EarthPoint alloc] init];
+    location0.planeId=0;
     
     location0.theta  = GLKMathDegreesToRadians(_country[0].lat - 90);// 90 and 180 offset to match with earth view projection
     location0.phi = GLKMathDegreesToRadians(_country[0].lon -180 );
@@ -368,21 +370,22 @@
     
     [self.allCurves insertObject:location0 atIndex:0];
     
-    TexImgTween* tween = [[TexImgTween alloc] init];
-    tween.planeId = 0;
-    tween.targetPhi = location0.phi;
-    tween.targetTheta = location0.theta;
-    tween.duration = _duration;
-    tween.delay = (180.0f-fabs(_country[0].lat))*delay; //i*delay;
-    tween.globeCenter = location0.roundLoc;
-    tween.wallCenter =  location0.flatLoc;
-    tween.duration = _duration;
-    [self.curveTweens insertObject:tween atIndex:0];
+    TexImgTween* tween0 = [[TexImgTween alloc] init];
+    tween0.planeId = 0;
+    tween0.targetPhi = location0.phi;
+    tween0.targetTheta = location0.theta;
+    tween0.duration = _duration;
+    tween0.delay = (180.0f-fabs(_country[0].lat))*delay; //i*delay;
+    tween0.globeCenter = location0.roundLoc;
+    tween0.wallCenter =  location0.flatLoc;
+    tween0.duration = _duration;
+    [self.curveTweens insertObject:tween0 atIndex:0];
     
     //now make the end points of all curves
     for(int i=0;i<totalCurves; i++){
         
         PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
+        location.planeId=i+1;
         
         location.theta  = GLKMathDegreesToRadians(_country[i+1].lat - 90);// 90 and 180 offset to match with earth view projection
         location.phi = GLKMathDegreesToRadians(_country[i+1].lon -180 );
@@ -412,6 +415,7 @@
         tween.globeCenter = location.roundLoc;
         tween.wallCenter =  location.flatLoc;
         tween.duration = _duration;
+//        NSLog(@"init curve %d", location.planeId);
         [self.curveTweens insertObject:tween atIndex:i+1];
         
         //there will be a lot more curves
@@ -421,15 +425,13 @@
         if(self.viewType==GLOBE){
             location.center = location.roundLoc; // the end pointof the bezier curve
             self.curves[i*(segmentsPerCurve+1)].positionCoords = location0.roundLoc; //the source point of the bezier curve
-            [location createBezierStart:location0 end:location view:self.viewType segments:segmentsPerCurve];
             
         } else {
             location.center = location.flatLoc; // the end point of the bezier curve
             self.curves[i*(segmentsPerCurve+1)].positionCoords = location0.flatLoc; // the source point of the bezier curve
-            [location createBezierStart:location0 end:location view:self.viewType segments:segmentsPerCurve];
         }
         
-        [location createBezierStart:location0 end:location view:self.viewType segments:segmentsPerCurve];
+        [location createBezierStart:location0 view:self.viewType segments:segmentsPerCurve];
         
         for(int j=0; j<=segmentsPerCurve; j++){
             self.curves[i*(segmentsPerCurve+1)+j].positionCoords = location.bezierPoints[j+4];
@@ -437,9 +439,14 @@
         }
         
         //thse two are control points, now make the segments
-        [self.allCurves insertObject:location atIndex:i+1];
+      
+        [self.allCurves insertObject:location atIndex:(i+1)];
+        
+        
+//        NSLog(@"insering  curve %d", location.planeId);
         
     }
+    
     
 }
 
@@ -519,6 +526,17 @@
     
     
     
+}
+
+-(IBAction)swapBarOrArc:(id)sender{
+    int i = [sender selectedSegmentIndex];
+    if (i== ARC){
+        self.barOrArc = ARC;
+    }
+    else if(i== BAR) {
+        self.barOrArc = BAR;
+    }
+
 }
 
 -(IBAction) changeViewType:(id)sender {
@@ -826,10 +844,11 @@
         }
     }
     self.curves[0].positionCoords = location.center;
-    
+
     //now update the rest of them
-    for(int index=1; index < totalCurves; index++){
-        PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
+    for(int index=1; index < totalCurves+1; index++){
+        PNT_EarthPoint* location = [self.allCurves objectAtIndex:index];
+//        NSLog(@"animation location %d, index=%d", location.planeId, index );
         TexImgTween* tween = [self.curveTweens objectAtIndex:index];
         float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
         durationRemaining = _duration - timePassedSinceStart;
@@ -844,16 +863,18 @@
                                            timeElapsed: timePassedSinceStart-tween.delay
                                               duration: _duration
                                                  ratio:ratio];
+            for(int j=0; j<=segmentsPerCurve; j++){
+                self.curves[(index-1)*(segmentsPerCurve+1)+j].positionCoords = location.bezierPoints[j+4];
+            }
+
             if(isUpdated==NO){
                 toRotate = YES;
             }else {
                 toRotate=NO;
             }
         }
-        for(int j=0; j<=segmentsPerCurve+4; j++){ // segment+1+4 control points
-            self.curves[j].positionCoords = location.bezierPoints[j];
-        }
-    }
+        
+           }
 }
 
 
@@ -888,9 +909,11 @@
     
     [self renderEarth];
     
-    [self renderBars];
-    
-    [self renderCurves];
+    if(self.barOrArc==BAR){
+        [self renderBars];
+    }else{
+        [self renderCurves];
+    }
 }
 
 
@@ -924,8 +947,9 @@
 
     }
     
-    //    if(self.viewType==GLOBE && toRotate==YES)
-    //        modelrotation.y -= 0.2;
+    if(self.viewType==GLOBE && toRotate==YES){
+      //  modelrotation.y -= 0.2;
+    }
     
 }
 

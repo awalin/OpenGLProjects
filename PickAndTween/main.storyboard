@@ -16,8 +16,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="768" height="1024"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <segmentedControl opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="CfA-h6-CNb">
-                                <rect key="frame" x="359" y="959" width="123" height="29"/>
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="CfA-h6-CNb">
+                                <rect key="frame" x="500" y="959" width="123" height="29"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="123" id="qjR-U7-HY6"/>
@@ -30,15 +30,34 @@
                                     <action selector="changeViewType:" destination="09T-jw-ngQ" eventType="valueChanged" id="AF7-Xg-WUC"/>
                                 </connections>
                             </segmentedControl>
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="hHH-7n-iKT">
+                                <rect key="frame" x="172" y="959" width="123" height="29"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="123" id="fXa-j9-Cos"/>
+                                </constraints>
+                                <segments>
+                                    <segment title="Bars"/>
+                                    <segment title="Arcs"/>
+                                </segments>
+                                <connections>
+                                    <action selector="swapBarOrArc:" destination="09T-jw-ngQ" eventType="valueChanged" id="0TN-tp-C91"/>
+                                </connections>
+                            </segmentedControl>
                         </subviews>
                         <constraints>
+                            <constraint firstItem="CfA-h6-CNb" firstAttribute="top" secondItem="hHH-7n-iKT" secondAttribute="top" id="FSO-71-neG"/>
                             <constraint firstItem="aEa-Jq-Rgd" firstAttribute="top" secondItem="CfA-h6-CNb" secondAttribute="bottom" constant="37" id="QS8-Oz-PS1"/>
+                            <constraint firstItem="hHH-7n-iKT" firstAttribute="leading" secondItem="R93-kb-SdF" secondAttribute="leading" constant="172" id="UUr-qN-hwu"/>
+                            <constraint firstAttribute="trailing" secondItem="CfA-h6-CNb" secondAttribute="trailing" constant="145" id="XDa-qO-2KX"/>
+                            <constraint firstItem="CfA-h6-CNb" firstAttribute="baseline" secondItem="hHH-7n-iKT" secondAttribute="baseline" id="iie-DL-64p"/>
                         </constraints>
                         <connections>
                             <outlet property="delegate" destination="09T-jw-ngQ" id="HHp-Pf-nMi"/>
                         </connections>
                     </glkView>
                     <connections>
+                        <outlet property="barOrArcSegments" destination="hHH-7n-iKT" id="b5D-Wc-JZZ"/>
                         <outlet property="viewTypeSegments" destination="CfA-h6-CNb" id="oJJ-nT-ee5"/>
                     </connections>
                 </glkViewController>

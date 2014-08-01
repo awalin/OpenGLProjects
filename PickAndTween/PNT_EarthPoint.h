@@ -21,6 +21,8 @@
 @property GLKVector2 texCoord;
 @property GLKVector3 center;
 
+@property GLKVector3 *bezierPointsGlobe;
+@property GLKVector3 *bezierPointsFlat;
 @property GLKVector3 *bezierPoints;
 
 @property int planeId;
@@ -42,6 +44,8 @@
 @property GLKVector3 planeRotation;
 @property GLKVector3 scale;
 
+@property BOOL needsUpdate;
+
 -(PNT_EarthPoint*) init;
 
 -(BOOL) updateVertex:(GLKVector3) targetCenter
@@ -51,7 +55,6 @@
                ratio:(float)ratio;
 
 -(void) createBezierStart:(PNT_EarthPoint*) start
-                      end:(PNT_EarthPoint*) end
                      view:(ViewType)vType
                  segments:(int)segments;
 
