@@ -42,7 +42,7 @@
     int totalCurvePoints;
     BOOL toRotate;
     float imageAspect;
-    
+    float timePassedSinceStart;
     
     int rows;
     int cols;
@@ -59,10 +59,11 @@
     GLuint locationTextureBuffer;
     GLuint locationColorBuffer;
     GLuint _planeIndicesBuffer;
+    NSDate* currentTime; //when animation should start/ trigger to start animationafter change view is clicked
     
     TexImgTweenFunction* tweenFunction;
     int segmentsPerCurve;
-    
+    float ratio;
 }
 
 
@@ -116,10 +117,10 @@
     
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
     
-    touchEnded = NO;
+    touchEnded = YES;
     friction = 0.90;
     _duration = 0.5;
-    delay=0.00001;
+    delay=0.0;//0.00001;
     velocity = GLKVector3Make(0,0,0);
     zoomscale = 1.0;
     
@@ -309,26 +310,9 @@
         }
     
     [self initBars];
-    
     [self initCurves];
     
 }
-
-/***
- 
- GLKVector4 UIcolor : RGB to HSV
- 
- // Define a new brush color
- CGColorRef color = [UIColor colorWithHue:(CGFloat)[sender selectedSegmentIndex] / (CGFloat)kPaletteSize
- saturation:kSaturation
- brightness:kBrightness
- alpha:1.0].CGColor;
- const CGFloat *components = CGColorGetComponents(color);
- 
- // Defer to the OpenGL view to set the brush color
- [(PaintingView *)self.view setBrushColorWithRed:components[0] green:components[1] blue:components[2]];
- 
- ***/
 
 
 -(GLKVector4)toRGBwithHue:(float)h saturation:(float)s value:(float)v alpha:(float)a {
@@ -438,12 +422,8 @@
             self.curves[i*(segmentsPerCurve+1)+j].colorCoords = col;
         }
         
-        //thse two are control points, now make the segments
-      
+
         [self.allCurves insertObject:location atIndex:(i+1)];
-        
-        
-//        NSLog(@"insering  curve %d", location.planeId);
         
     }
     
@@ -554,8 +534,8 @@
     self.viewType = viewType;
     self.viewChanged=YES;
     //    NSLog(@"inside change view ");
-    NSDate* currentTime = [NSDate date];
-    
+    currentTime = [NSDate date];
+    //earth surface
     for(int index=0; index<totalPoints; index++){
         TexImgTween* tween = [self.earthTweens objectAtIndex:index];
         tween.startTime = currentTime;
@@ -593,6 +573,9 @@
             [tween setSourceCenter: tween.globeCenter];
         }
     }
+    
+    
+    NSLog(@"Type=%d", self.viewType);
 }
 
 -(void) setDuration:(float) val {
@@ -758,31 +741,19 @@
     if(self.viewChanged==NO){
         return;
     }
-    
-    NSTimeInterval timeElapsedSinceLastUpdate = [self timeSinceLastUpdate];
-    NSTimeInterval durationRemaining;
-    
+
+    NSLog(@"ratio = %f", ratio);
     //    NSLog(@"inside animation");
     for(int index =0; index < totalPoints; index++){
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
         TexImgTween* tween = [self.earthTweens objectAtIndex:index];
-        float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
-        durationRemaining = tween.duration - timePassedSinceStart;
-        float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
-        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween.delay duration: tween.duration];
-        
-        if(timePassedSinceStart > tween.delay){
-            BOOL isUpdated = [location updateVertex:tween.targetCenter
+        self.viewChanged = [location updateVertex:tween.targetCenter
                                                mode:self.viewType
-                                        timeElapsed: timePassedSinceStart-tween.delay
+                                        timeElapsed: timePassedSinceStart
                                            duration: _duration //durationRemaining
                                               ratio:ratio];
-            if(isUpdated==NO){
-                toRotate = YES;
-            }else {
-                toRotate=NO;
-            }
-        }
+      
+    
         self.locations[index].positionCoords = location.center;
     }
     
@@ -790,22 +761,14 @@
     for(int index =0; index < totalBars; index++){
         PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
         TexImgTween* tween = [self.barTweens objectAtIndex:index];
-        float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
-        durationRemaining = _duration - timePassedSinceStart;
-        float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
-        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween.delay duration:_duration];
-        
-        if(timePassedSinceStart > tween.delay){
-            BOOL isUpdated = [location updateVertex:tween.targetCenter
+
+        {
+            self.viewChanged  = [location updateVertex:tween.targetCenter
                                                mode:self.viewType
-                                        timeElapsed: timePassedSinceStart-tween.delay
+                                        timeElapsed: timePassedSinceStart
                                            duration: _duration
                                               ratio:ratio];
-            if(isUpdated==NO){
-                toRotate = YES;
-            }else {
-                toRotate=NO;
-            }
+         
         }
         self.bars[index*2].positionCoords = location.center;
         
@@ -826,55 +789,33 @@
     
     //update the center of all the arcs
     PNT_EarthPoint* location = [self.allCurves objectAtIndex:0];
-    float timePassedSinceStart = -[tween0.startTime timeIntervalSinceNow];
-    durationRemaining = _duration - timePassedSinceStart;
-    float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
-    ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween0.delay duration:_duration];
-    
-    if(timePassedSinceStart > tween0.delay){
-        BOOL isUpdated = [location updateVertex:tween0.targetCenter
+    self.viewChanged  = [location updateVertex:tween0.targetCenter
                                            mode:self.viewType
-                                    timeElapsed: timePassedSinceStart-tween0.delay
-                                       duration: _duration
-                                          ratio:ratio];
-        if(isUpdated==NO){
-            toRotate = YES;
-        }else {
-            toRotate=NO;
-        }
-    }
+                                    timeElapsed: timePassedSinceStart
+                                          duration: _duration
+                                             ratio:ratio];
+      
+
     self.curves[0].positionCoords = location.center;
+    
 
     //now update the rest of them
     for(int index=1; index < totalCurves+1; index++){
         PNT_EarthPoint* location = [self.allCurves objectAtIndex:index];
-//        NSLog(@"animation location %d, index=%d", location.planeId, index );
-        TexImgTween* tween = [self.curveTweens objectAtIndex:index];
-        float timePassedSinceStart = -[tween.startTime timeIntervalSinceNow];
-        durationRemaining = _duration - timePassedSinceStart;
-        float ratio =  timeElapsedSinceLastUpdate/timePassedSinceStart;
-        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart-tween.delay duration:_duration];
-        
-        if(timePassedSinceStart > tween.delay){
-            BOOL isUpdated=[location updateBezierStart:tween0
-                                                   end:tween
-                                                  view:self.viewType
+
+        {
+            self.viewChanged  =[location updateBezierView:self.viewType
                                               segments:segmentsPerCurve
-                                           timeElapsed: timePassedSinceStart-tween.delay
+                                           timeElapsed: timePassedSinceStart
                                               duration: _duration
                                                  ratio:ratio];
             for(int j=0; j<=segmentsPerCurve; j++){
                 self.curves[(index-1)*(segmentsPerCurve+1)+j].positionCoords = location.bezierPoints[j+4];
             }
 
-            if(isUpdated==NO){
-                toRotate = YES;
-            }else {
-                toRotate=NO;
-            }
+         
         }
-        
-           }
+    }
 }
 
 
@@ -921,14 +862,23 @@
     
     if(self.viewChanged) {
         toRotate=NO;
-        [self animateView];// changes the points
+        
+        timePassedSinceStart = -[currentTime timeIntervalSinceNow];
+        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
+        NSLog(@"time passed since start %f", timePassedSinceStart);
+        //add +0.1, hack, as we don't know the exact update scedule, otherwise the drawing is not complete
+        if(timePassedSinceStart > _duration+0.1){
+            self.viewChanged = NO;
+        } else {
+            [self animateView];// changes the points
+        }
         
         //update earth
         //TODO: use function calls from drawcall object rathert han using directly
         glBindBuffer(GL_ARRAY_BUFFER, locationVertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(CustomPoint)*totalPoints, self.locations, GL_DYNAMIC_DRAW);
         
-        //update lines if needed
+        //update bars
         GLK2DrawCall* drawObject = [self.shapes objectAtIndex:1];
         [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
                                filledWithData:self.bars //addres of the bytes to copy
@@ -947,8 +897,8 @@
 
     }
     
-    if(self.viewType==GLOBE && toRotate==YES){
-      //  modelrotation.y -= 0.2;
+    if(self.viewType==GLOBE && self.viewChanged==NO && touchEnded==YES){
+        modelrotation.y -= 0.2;
     }
     
 }

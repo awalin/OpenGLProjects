@@ -58,9 +58,7 @@
                      view:(ViewType)vType
                  segments:(int)segments;
 
--(BOOL)updateBezierStart:(TexImgTween*)targetStart
-                     end:(TexImgTween*) targetEnd
-                    view:(ViewType)vType
+-(BOOL)updateBezierView:(ViewType)vType
                 segments:(int)segments
              timeElapsed:(NSTimeInterval)timeElapsed
                 duration:(NSTimeInterval)duration
