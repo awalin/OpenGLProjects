@@ -47,14 +47,17 @@ typedef enum {
 @property CustomPoint *locations; // array of the planes
 @property CustomPoint *bars;
 @property CustomPoint *curves;
+@property CustomPoint *particles;
 
 @property NSMutableArray* earthTweens;
 @property NSMutableArray* barTweens;
 @property NSMutableArray* curveTweens;
+@property NSMutableArray* particleTweens;
 
 @property NSMutableArray* allLocations;
 @property NSMutableArray* allLines;
 @property NSMutableArray* allCurves;
+@property NSMutableArray* allParticles;
 
 @property(nonatomic, retain) NSMutableArray* shapes;
 

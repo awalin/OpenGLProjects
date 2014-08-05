@@ -40,6 +40,9 @@
     int totalCurves;
     int totalLinePoints;
     int totalCurvePoints;
+    int totalParticles;
+    int totalParticlePoints;
+    
     BOOL toRotate;
     float imageAspect;
     float timePassedSinceStart;
@@ -106,7 +109,7 @@
     self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     
     segmentsPerCurve = 30;
-    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;
+    totalCurves = (sizeof(_country)/sizeof(_country[0]));
     totalCurvePoints = totalCurves*(segmentsPerCurve+1);
     self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
     self.allCurves = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];//all the curves and the centre point
@@ -114,6 +117,12 @@
     self.earthTweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
     self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];
+    
+    totalParticles = totalCurves*3; // 3 particles per curve
+    totalParticlePoints = totalCurves*6;
+    self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
+    self.allParticles =  [[NSMutableArray alloc] initWithCapacity:totalParticles];
+    self.particleTweens = [[NSMutableArray alloc] initWithCapacity:totalParticles];
     
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
     
@@ -311,9 +320,61 @@
     
     [self initBars];
     [self initCurves];
+    [self initParticles];
     
 }
 
+-(void) initParticles{
+  
+    
+    //now make the end points of all curves
+    for(int i=1;i<=totalCurves; i++){
+        
+        PNT_EarthPoint* locationc = [self.allCurves objectAtIndex:i];
+        for(int j = 0 ; j < 3 ; j++){
+            
+             NSLog(@"%d", (i-1)*3+j);
+            
+            PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
+            location.planeId=(i-1)*3+j;
+            
+            location.theta  = locationc.theta; // 90 and 180 offset to match with earth view projection
+            location.phi = locationc.phi;
+            location.length = locationc.length;
+            int index = j*(3+segmentsPerCurve)/3;
+            location.roundLoc = locationc.bezierPointsGlobe[index];
+            location.flatLoc  = locationc.bezierPointsFlat[index];
+            float L = 1.0;
+            float S = 0.5;
+            float hue =  0.6*i/totalCurves;
+            GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
+            
+            //there will be a lot more tweens. For each curve, segment+1 number of tweens and points
+            TexImgTween* tween = [[TexImgTween alloc] init];
+            tween.planeId = j*3;
+            tween.targetPhi = location.phi;
+            tween.targetTheta = location.theta;
+            tween.duration = _duration;
+            tween.delay = (180.0f-fabs(_country[i].lat))*delay; //i*delay;
+            tween.globeCenter = location.roundLoc;
+            tween.wallCenter =  location.flatLoc;
+            tween.duration = _duration;
+            [self.particleTweens insertObject:tween atIndex:(i-1)*3+j];
+    
+            self.particles[(i-1)*3+j].colorCoords = col;
+            location.center = locationc.bezierPoints[index] ;
+            self.particles[(i-1)*3+j].positionCoords = locationc.bezierPoints[index] ;
+            //now make all other corners of the plane of the particle
+           
+            [self.allParticles insertObject:location atIndex:((i-1)*3+j)];
+
+        
+        }
+        
+    }
+
+
+}
 
 -(GLKVector4)toRGBwithHue:(float)h saturation:(float)s value:(float)v alpha:(float)a {
     CGColorRef color = [UIColor colorWithHue:h saturation:s brightness:v alpha:1.0].CGColor;
@@ -742,7 +803,7 @@
         return;
     }
 
-    NSLog(@"ratio = %f", ratio);
+//    NSLog(@"ratio = %f", ratio);
     //    NSLog(@"inside animation");
     for(int index =0; index < totalPoints; index++){
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
@@ -865,7 +926,7 @@
         
         timePassedSinceStart = -[currentTime timeIntervalSinceNow];
         ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
-        NSLog(@"time passed since start %f", timePassedSinceStart);
+//        NSLog(@"time passed since start %f", timePassedSinceStart);
         //add +0.1, hack, as we don't know the exact update scedule, otherwise the drawing is not complete
         if(timePassedSinceStart > _duration+0.1){
             self.viewChanged = NO;
@@ -898,7 +959,7 @@
     }
     
     if(self.viewType==GLOBE && self.viewChanged==NO && touchEnded==YES){
-        modelrotation.y -= 0.2;
+//        modelrotation.y -= 0.2;
     }
     
 }
