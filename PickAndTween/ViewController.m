@@ -109,7 +109,7 @@
     self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
     
     segmentsPerCurve = 30;
-    totalCurves = (sizeof(_country)/sizeof(_country[0]));
+    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;// -1 as the first point is the centre of all arcs
     totalCurvePoints = totalCurves*(segmentsPerCurve+1);
     self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
     self.allCurves = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];//all the curves and the centre point
@@ -119,7 +119,7 @@
     self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];
     
     totalParticles = totalCurves*3; // 3 particles per curve
-    totalParticlePoints = totalCurves*6;
+    totalParticlePoints = totalParticles*6;
     self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
     self.allParticles =  [[NSMutableArray alloc] initWithCapacity:totalParticles];
     self.particleTweens = [[NSMutableArray alloc] initWithCapacity:totalParticles];
@@ -187,6 +187,9 @@
         }
     
 }
+
+
+
 
 
 //This is static part//
@@ -328,51 +331,59 @@
   
     
     //now make the end points of all curves
-    for(int i=1;i<=totalCurves; i++){
+//    NSLog(@"%d", totalCurves);
+    int count=0;
+    for(int i=1; i<=totalCurves; i++){
         
-        PNT_EarthPoint* locationc = [self.allCurves objectAtIndex:i];
+        PNT_EarthPoint* locationA = [self.allCurves objectAtIndex:i];
         for(int j = 0 ; j < 3 ; j++){
+            int cur = (i-1)*3+j;
             
-             NSLog(@"%d", (i-1)*3+j);
+            NSLog(@"i=%d", cur);
             
             PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
-            location.planeId=(i-1)*3+j;
-            
-            location.theta  = locationc.theta; // 90 and 180 offset to match with earth view projection
-            location.phi = locationc.phi;
-            location.length = locationc.length;
-            int index = j*(3+segmentsPerCurve)/3;
-            location.roundLoc = locationc.bezierPointsGlobe[index];
-            location.flatLoc  = locationc.bezierPointsFlat[index];
+            location.planeId = cur;
+            location.theta  = locationA.theta; // 90 and 180 offset to match with earth view projection
+            location.phi = locationA.phi;
+            location.length = locationA.length;
+            int index = j*(segmentsPerCurve)/4+3+1;
+//            NSLog(@"index = %d", index);
+            location.roundLoc = locationA.bezierPointsGlobe[index];
+            location.flatLoc  = locationA.bezierPointsFlat[index];
             float L = 1.0;
             float S = 0.5;
-            float hue =  0.6*i/totalCurves;
+            float hue =  0.4*cur/totalParticles;
             GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
             
             //there will be a lot more tweens. For each curve, segment+1 number of tweens and points
             TexImgTween* tween = [[TexImgTween alloc] init];
-            tween.planeId = j*3;
+            tween.planeId = cur;
             tween.targetPhi = location.phi;
             tween.targetTheta = location.theta;
             tween.duration = _duration;
             tween.delay = (180.0f-fabs(_country[i].lat))*delay; //i*delay;
             tween.globeCenter = location.roundLoc;
             tween.wallCenter =  location.flatLoc;
-            tween.duration = _duration;
-            [self.particleTweens insertObject:tween atIndex:(i-1)*3+j];
-    
-            self.particles[(i-1)*3+j].colorCoords = col;
-            location.center = locationc.bezierPoints[index] ;
-            self.particles[(i-1)*3+j].positionCoords = locationc.bezierPoints[index] ;
-            //now make all other corners of the plane of the particle
-           
-            [self.allParticles insertObject:location atIndex:((i-1)*3+j)];
+            [self.particleTweens insertObject:tween atIndex:cur];
 
-        
+            //now make all other corners of the plane of the particle
+            location.center = locationA.points[index] ;
+            
+            //now create the plane centering the location
+            [location createParticle];
+            
+            for(int k=0;k<6; k++){
+                self.particles[count].positionCoords = location.points[k];
+                self.particles[count].colorCoords = col;
+                count++;
+            }
+            
+            [self.allParticles insertObject:location atIndex:cur];
         }
         
     }
 
+    NSLog(@"count %d", count);
 
 }
 
@@ -455,7 +466,6 @@
         tween.planeId = i+1;
         tween.targetPhi = location.phi;
         tween.targetTheta = location.theta;
-        tween.duration = _duration;
         tween.delay = (180.0f-fabs(_country[i+1].lat))*delay; //i*delay;
         tween.globeCenter = location.roundLoc;
         tween.wallCenter =  location.flatLoc;
@@ -479,7 +489,7 @@
         [location createBezierStart:location0 view:self.viewType segments:segmentsPerCurve];
         
         for(int j=0; j<=segmentsPerCurve; j++){
-            self.curves[i*(segmentsPerCurve+1)+j].positionCoords = location.bezierPoints[j+4];
+            self.curves[i*(segmentsPerCurve+1)+j].positionCoords = location.points[j+4];
             self.curves[i*(segmentsPerCurve+1)+j].colorCoords = col;
         }
         
@@ -531,7 +541,6 @@
         tween.delay = (180.0f-fabs(_population[i].lat))*delay; //i*delay;
         tween.globeCenter = location.roundLoc;
         tween.wallCenter =  location.flatLoc;
-        tween.duration = _duration;
         [self.barTweens insertObject:tween atIndex:i*2];
         
         TexImgTween* tween2 = [[TexImgTween alloc] init];
@@ -596,6 +605,7 @@
     self.viewChanged=YES;
     //    NSLog(@"inside change view ");
     currentTime = [NSDate date];
+    
     //earth surface
     for(int index=0; index<totalPoints; index++){
         TexImgTween* tween = [self.earthTweens objectAtIndex:index];
@@ -609,6 +619,7 @@
             [tween setSourceCenter: tween.globeCenter];
         }
     }
+    
     //bars
     for(int index=0; index<totalBars*2; index++){
         TexImgTween* tween = [self.barTweens objectAtIndex:index];
@@ -635,8 +646,21 @@
         }
     }
     
+    //particles
+    for(int index=0; index<totalParticles; index++){
+        TexImgTween* tween = [self.particleTweens objectAtIndex:index];
+        tween.startTime = currentTime;
+        if(self.viewType==GLOBE){
+            [tween setTargetCenter: tween.globeCenter];
+            [tween setSourceCenter: tween.wallCenter];
+        } else if(self.viewType==WALL){
+            [tween setTargetCenter: tween.wallCenter];
+            [tween setSourceCenter: tween.globeCenter];
+        }
+    }
     
-    NSLog(@"Type=%d", self.viewType);
+    
+//    NSLog(@"Type=%d", self.viewType);
 }
 
 -(void) setDuration:(float) val {
@@ -680,6 +704,8 @@
     [self setUpLines];
     
     [self setUpCurves];
+    
+    [self setupParticles];
 }
 
 -(void) setUpEarth{
@@ -779,9 +805,36 @@
                                 offset:(void *)offsetof(CustomPoint, colorCoords) ];
     
     [self.shapes addObject: drawObject];
-    
-    
 }
+
+-(void) setupParticles {
+    
+    GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
+    drawObject.mode = GL_TRIANGLES;
+    
+    drawObject.numOfVerticesToDraw = totalParticlePoints;
+    drawObject.VAO = [[GLKVAObject alloc] init];
+    
+    [drawObject.VAO addVBOForAttribute:GLKVertexAttribPosition
+                        filledWithData:self.particles //addres of the bytes to copy
+                           numVertices:drawObject.numOfVerticesToDraw
+                           numOfFloats:3 //floats in GLKVector3
+                                stride:sizeof(CustomPoint)
+                                offset:(void *)offsetof(CustomPoint, positionCoords)];
+    
+    
+    [drawObject.VAO addVBOForAttribute:GLKVertexAttribColor
+                        filledWithData:self.particles //addres of the bytes to copy
+                           numVertices:drawObject.numOfVerticesToDraw
+                           numOfFloats:4
+                                stride:sizeof(CustomPoint)
+                                offset:(void *)offsetof(CustomPoint, colorCoords) ];
+    
+    [self.shapes addObject: drawObject];
+
+
+}
+
 
 -(void) setDelay:(float) val {
     
@@ -802,6 +855,28 @@
     if(self.viewChanged==NO){
         return;
     }
+    
+    //update the particles
+    int count=0;
+    for(int index=0; index <totalParticles; index++){
+        TexImgTween* particleTween = [self.particleTweens objectAtIndex:index];
+        PNT_EarthPoint* particle = [self.allParticles objectAtIndex:index];
+        self.viewChanged  = [particle updateVertex: particleTween.targetCenter
+                                              mode:self.viewType
+                                       timeElapsed: timePassedSinceStart
+                                          duration: _duration //durationRemaining
+                                             ratio:ratio];
+        
+        if(self.viewChanged){
+            
+            [particle createParticle];
+            for(int k=0;k<6; k++){
+                self.particles[count].positionCoords = particle.points[k];
+                count++;
+            }
+        }
+    }
+
 
 //    NSLog(@"ratio = %f", ratio);
     //    NSLog(@"inside animation");
@@ -855,29 +930,28 @@
                                     timeElapsed: timePassedSinceStart
                                           duration: _duration
                                              ratio:ratio];
-      
-
     self.curves[0].positionCoords = location.center;
-    
-
     //now update the rest of them
     for(int index=1; index < totalCurves+1; index++){
         PNT_EarthPoint* location = [self.allCurves objectAtIndex:index];
 
-        {
+//        {
             self.viewChanged  =[location updateBezierView:self.viewType
                                               segments:segmentsPerCurve
                                            timeElapsed: timePassedSinceStart
                                               duration: _duration
                                                  ratio:ratio];
             for(int j=0; j<=segmentsPerCurve; j++){
-                self.curves[(index-1)*(segmentsPerCurve+1)+j].positionCoords = location.bezierPoints[j+4];
+                self.curves[(index-1)*(segmentsPerCurve+1)+j].positionCoords = location.points[j+4];
             }
 
          
-        }
+//        }
     }
-}
+    
+    
+    
+   }
 
 
 /*called after update loop
@@ -908,19 +982,31 @@
 		return;
 	}
     
-    
     [self renderEarth];
-    
     if(self.barOrArc==BAR){
         [self renderBars];
     }else{
         [self renderCurves];
+        [self renderParticles];
     }
+    
 }
 
+-(void) moveParticles{
+
+    //move particles constarntly
+    GLK2DrawCall* drawObject = [self.shapes objectAtIndex:3];
+    [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
+                           filledWithData:self.particles                            //addres of the bytes to copy
+                              numVertices:drawObject.numOfVerticesToDraw
+                              numOfFloats:3 //floats in GLKVector3
+                                   stride:sizeof(CustomPoint)
+                                   offset:(void *)offsetof(CustomPoint, positionCoords)];
+
+}
 
 -(void) update {
-    
+  
     if(self.viewChanged) {
         toRotate=NO;
         
@@ -955,18 +1041,29 @@
                                   numOfFloats:3 //floats in GLKVector3
                                        stride:sizeof(CustomPoint)
                                        offset:(void *)offsetof(CustomPoint, positionCoords)];
+        
+        drawObject = [self.shapes objectAtIndex:3];
+        [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
+                               filledWithData:self.particles                            //addres of the bytes to copy
+                                  numVertices:drawObject.numOfVerticesToDraw
+                                  numOfFloats:3 //floats in GLKVector3
+                                       stride:sizeof(CustomPoint)
+                                       offset:(void *)offsetof(CustomPoint, positionCoords)];
 
+    }  else {
+    
+//        [self moveParticles];
     }
     
     if(self.viewType==GLOBE && self.viewChanged==NO && touchEnded==YES){
-//        modelrotation.y -= 0.2;
+       modelrotation.y -= 0.2;
     }
     
 }
 
 -(void) renderCurves{
     
-    if( self.shapes == nil || self.shapes.count < 1 ){
+    if( self.shapes == nil || self.shapes.count < 3 ){
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
     }
@@ -983,7 +1080,6 @@
             glEnable(GL_LINE_SMOOTH);
             glLineWidth(1.0f);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            
             
             glBindVertexArrayOES( drawCall.VAO.glName );
             for(int i = 0; i < totalCurves; i++){
@@ -1002,7 +1098,6 @@
     
     
 }
-
 
 -(void) renderEarth {
     
@@ -1031,7 +1126,7 @@
     
     //    glBindVertexArrayOES(0);
     
-    if( self.shapes == nil || self.shapes.count < 1 ){
+    if( self.shapes == nil || self.shapes.count < 2 ){
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
     }
@@ -1053,7 +1148,30 @@
     
 }
 
+-(void) renderParticles{
+    
+    if( self.shapes == nil || self.shapes.count < 4 ){
+		NSLog(@"no drawcalls specified; rendering nothing");
+        return;
+    }
+//    NSLog(@"rendering particles");
+    //for( GLK2DrawCall* drawCall in self.shapes )
+    GLK2DrawCall* drawCall = [self.shapes objectAtIndex:3];
+    {
+        if( drawCall.VAO != nil ){
+            self.effect.texture2d0.enabled = NO;
+            [self.effect prepareToDraw];
+            glEnableVertexAttribArray(GLKVertexAttribColor);
+            [drawCall drawWithMode:GL_TRIANGLES];
+        }
+        else {
+            NSLog(@"not available");
+        }
+    }
 
+
+
+}
 -(void) zoomWithPinchGesture:(UIPinchGestureRecognizer*) sender{
     
     GLfloat scale;

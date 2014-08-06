@@ -41,9 +41,9 @@
     }
     self.center = vrtx;
     
-    if(timeElapsed >= duration){
-        self.center= targetCenter;
-    }
+//    if(timeElapsed >= duration){
+//        self.center= targetCenter;
+//    }
     return YES;
     
 }
@@ -58,8 +58,8 @@
     if(self.bezierPointsFlat==NULL){
         self.bezierPointsFlat = (GLKVector3*)malloc((segments+1+4)*sizeof(GLKVector3));
     }
-    if(self.bezierPoints==NULL){
-        self.bezierPoints = (GLKVector3*)malloc((segments+1+4)*sizeof(GLKVector3));
+    if(self.points==NULL){
+        self.points = (GLKVector3*)malloc((segments+1+4)*sizeof(GLKVector3));
     }
     
 //    NSLog(@"creating bezier %d", self.planeId);
@@ -137,11 +137,11 @@
     
     if(vType==GLOBE){
         for(int i=0; i< segments+1+4; i++){
-            self.bezierPoints[i] = self.bezierPointsGlobe[i];
+            self.points[i] = self.bezierPointsGlobe[i];
         }
     }else{
         for(int i=0; i< segments+1+4; i++){
-            self.bezierPoints[i] = self.bezierPointsFlat[i];
+            self.points[i] = self.bezierPointsFlat[i];
         }
 
     }
@@ -167,22 +167,22 @@
     if(vType==GLOBE){//target == globe
         for(int i=0; i< segments+1+4; i++){
             
-            vrtx = self.bezierPoints[i];//current fist point
+            vrtx = self.points[i];//current fist point
             distanceC = GLKVector3Subtract(self.bezierPointsGlobe[i], vrtx) ;
             //multiply scalar ratio , then add with the current value
             vrtx.x = vrtx.x + ratio*distanceC.x;
             vrtx.y = vrtx.y + ratio*distanceC.y;
             vrtx.z = vrtx.z + ratio*distanceC.z;
             
-            distanceC = GLKVector3Subtract(vrtx, self.bezierPoints[i]);
+            distanceC = GLKVector3Subtract(vrtx, self.points[i]);
             if(GLKVector3Length(distanceC) == 0){
                 //change complete
                 return NO;
             }
             
-            self.bezierPoints[i] = vrtx;
+            self.points[i] = vrtx;
             if(duration<=timeElapsed){
-                self.bezierPoints[i] = self.bezierPointsGlobe[i];
+                self.points[i] = self.bezierPointsGlobe[i];
             }
             
         }
@@ -190,31 +190,86 @@
     } else if(vType==WALL){//target == globe
         for(int i=0; i< segments+1+4; i++){
             
-            vrtx = self.bezierPoints[i];//current fist point
+            vrtx = self.points[i];//current fist point
             distanceC = GLKVector3Subtract(self.bezierPointsFlat[i], vrtx) ;
             //multiply scalar ratio , then add with the current value
             vrtx.x = vrtx.x + ratio*distanceC.x;
             vrtx.y = vrtx.y + ratio*distanceC.y;
             vrtx.z = vrtx.z + ratio*distanceC.z;
             
-            distanceC = GLKVector3Subtract(vrtx, self.bezierPoints[i]);
+            distanceC = GLKVector3Subtract(vrtx, self.points[i]);
             if(GLKVector3Length(distanceC) == 0){
                 //change complete
                 return NO;
             }
-            self.bezierPoints[i] = vrtx;
+            self.points[i] = vrtx;
             
             if(duration<=timeElapsed){
-                self.bezierPoints[i] = self.bezierPointsFlat[i];
+                self.points[i] = self.bezierPointsFlat[i];
             }
             
         }
         
     }
     return YES;
+}
+
+-(void) createParticle {
+    //if particle, the poits are the corners of the particle if it is a plane, or depends on the particle model
     
+    if(self.points==NULL){
+        self.points = (GLKVector3*)malloc(6*sizeof(GLKVector3));
+    }
     
+    GLfloat s=0.0,t=0.0;
+    float width = 0.05;
+    float height = 0.05;
+    GLfloat y = self.center.y;
+    GLfloat x = self.center.x;
+    GLfloat z = self.center.z;
+//    NSLog(@"plane id %d: %f, %f, %f ", self.planeId, x, y, z);
+    //BL
+    s =  x - width/2 ;
+    t =  y - height/2;
+    GLKVector3 vrtx = GLKVector3Make(s, t, z);
+    self.points[0] = vrtx;
+    
+    //BR
+    s =  x + width/2 ;//s+eachRow;
+    t =  y - height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z);
+    self.points[1] = vrtx;
+    
+    //TL
+    s =  x - width/2 ;//s+eachRow;
+    t =  y + height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z); // base
+    self.points[2] = vrtx;
+    
+    //TR
+    s =  x + width/2 ;//s+eachRow;
+    t =  y + height/2;  //t;
+    vrtx =  GLKVector3Make(s, t, z); // base
+    self.points[3] = vrtx;
+    
+    //two more
+    //BR
+    s = x + width/2 ;//s+eachRow;
+    t = y - height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z); // base
+    self.points[4] = vrtx;
+    
+    //TL
+    s = x - width/2 ;//s+eachRow;
+    t = y + height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z); // base
+    self.points[5] = vrtx;
     
 }
 
+
+-(void) updateParticls{
+
+
+}
 @end

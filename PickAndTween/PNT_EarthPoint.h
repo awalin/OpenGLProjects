@@ -23,7 +23,7 @@
 
 @property GLKVector3 *bezierPointsGlobe;
 @property GLKVector3 *bezierPointsFlat;
-@property GLKVector3 *bezierPoints;
+@property GLKVector3 *points;
 
 @property int planeId;
 @property int colorId;
@@ -63,5 +63,7 @@
              timeElapsed:(NSTimeInterval)timeElapsed
                 duration:(NSTimeInterval)duration
                    ratio:(float)ratio;
+
+-(void) createParticle;
 
 @end
