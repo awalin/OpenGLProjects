@@ -48,6 +48,20 @@
     
 }
 
+-(BOOL) updateParticleCenter:(GLKVector3) targetCenter {
+    
+    GLKVector3 distanceC = GLKVector3Subtract(self.center, targetCenter);
+    
+    if(GLKVector3Length(distanceC) == 0){
+        //change complete
+        return NO;
+    }
+    self.center = targetCenter;
+    [self createParticle];
+    return YES;
+    
+}
+
 -(void) createBezierStart:(PNT_EarthPoint*) start view:(ViewType)vType segments:(int)segments{
     
     //4+20, 20=segments
@@ -268,8 +282,4 @@
 }
 
 
--(void) updateParticls{
-
-
-}
 @end

@@ -31,6 +31,7 @@
     GLKMatrix4 _rotMatrix;
     GLfloat zTranslation;
     NSTimeInterval _duration;
+    NSTimeInterval particleLife;
     NSTimeInterval delay;
     GLuint *meshIndices;
     int totalIndices;
@@ -57,12 +58,15 @@
     GLfloat eachWidth;
     GLfloat eachHeight;
     BOOL resetCalled;
+    float* tr;
     
     GLuint locationVertexBuffer;
     GLuint locationTextureBuffer;
     GLuint locationColorBuffer;
     GLuint _planeIndicesBuffer;
     NSDate* currentTime; //when animation should start/ trigger to start animationafter change view is clicked
+    NSDate* particleMotionStart;
+    float bezierRatio;
     
     TexImgTweenFunction* tweenFunction;
     int segmentsPerCurve;
@@ -123,8 +127,13 @@
     self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
     self.allParticles =  [[NSMutableArray alloc] initWithCapacity:totalParticles];
     self.particleTweens = [[NSMutableArray alloc] initWithCapacity:totalParticles];
+    tr = (float*)malloc(totalParticles*sizeof(float));
     
     meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
+    
+    particleMotionStart = [NSDate date];
+    particleLife= 2.0;
+    bezierRatio = 0.0;
     
     touchEnded = YES;
     friction = 0.90;
@@ -335,21 +344,53 @@
     int count=0;
     for(int i=1; i<=totalCurves; i++){
         
-        PNT_EarthPoint* locationA = [self.allCurves objectAtIndex:i];
+        PNT_EarthPoint* arc = [self.allCurves objectAtIndex:i];
         for(int j = 0 ; j < 3 ; j++){
             int cur = (i-1)*3+j;
             
-            NSLog(@"i=%d", cur);
+//            NSLog(@"j=%d, i=%d", j, cur);
+            GLKVector3 p0 = arc.points[0];
+            GLKVector3 p1 = arc.points[1];
+            GLKVector3 p2 = arc.points[2];
+            GLKVector3 p3 = arc.points[3];
+    
+            float t = (j+1)*0.25;
+            float nt = 1.0f -t;
             
+            GLKVector3 pointTarget = GLKVector3Make(p0.x * nt * nt * nt + 3.0 * p1.x * nt * nt * t + 3.0 * p2.x * nt * t * t +  p3.x * t * t * t,
+                                                    p0.y * nt * nt * nt + 3.0 * p1.y * nt * nt * t + 3.0 * p2.y * nt * t * t +  p3.y * t * t * t,
+                                                    p0.z * nt * nt * nt + 3.0 * p1.z * nt * nt * t + 3.0 * p2.z * nt * t * t +  p3.z * t * t * t);
+
             PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
+            //now make all other corners of the plane of the particle
+            location.center = pointTarget ;
             location.planeId = cur;
-            location.theta  = locationA.theta; // 90 and 180 offset to match with earth view projection
-            location.phi = locationA.phi;
-            location.length = locationA.length;
-            int index = j*(segmentsPerCurve)/4+3+1;
-//            NSLog(@"index = %d", index);
-            location.roundLoc = locationA.bezierPointsGlobe[index];
-            location.flatLoc  = locationA.bezierPointsFlat[index];
+            location.theta  = arc.theta; // 90 and 180 offset to match with earth view projection
+            location.phi = arc.phi;
+            location.length = arc.length;
+            
+            //NSLog(@"index = %d", index);
+            //make round loc
+            p0= arc.bezierPointsGlobe[0];
+            p1= arc.bezierPointsGlobe[1];
+            p2= arc.bezierPointsGlobe[2];
+            p3= arc.bezierPointsGlobe[3];
+            pointTarget = GLKVector3Make(p0.x * nt * nt * nt + 3.0 * p1.x * nt * nt * tr[j] + 3.0 * p2.x * nt * tr[j] * tr[j] +  p3.x * tr[j] * tr[j] * tr[j],
+                                                       p0.y * nt * nt * nt + 3.0 * p1.y * nt * nt * t + 3.0 * p2.y * nt * t * t +  p3.y * t * t * t,
+                                                       p0.z * nt * nt * nt + 3.0 * p1.z * nt * nt * t + 3.0 * p2.z * nt * t * t +  p3.z * t * t * t);
+
+
+            location.roundLoc = pointTarget;
+            
+            //create flat location
+            p0= arc.bezierPointsFlat[0];
+            p1= arc.bezierPointsFlat[1];
+            p2= arc.bezierPointsFlat[2];
+            p3= arc.bezierPointsFlat[3];
+            pointTarget = GLKVector3Make(p0.x * nt * nt * nt + 3.0 * p1.x * nt * nt * t + 3.0 * p2.x * nt * t * t +  p3.x * t * t * t,
+                                         p0.y * nt * nt * nt + 3.0 * p1.y * nt * nt * t + 3.0 * p2.y * nt * t * t +  p3.y * t * t * t,
+                                         p0.z * nt * nt * nt + 3.0 * p1.z * nt * nt * t + 3.0 * p2.z * nt * t * t +  p3.z * t * t * t);
+            location.flatLoc  = pointTarget;
             float L = 1.0;
             float S = 0.5;
             float hue =  0.4*cur/totalParticles;
@@ -365,9 +406,7 @@
             tween.globeCenter = location.roundLoc;
             tween.wallCenter =  location.flatLoc;
             [self.particleTweens insertObject:tween atIndex:cur];
-
-            //now make all other corners of the plane of the particle
-            location.center = locationA.points[index] ;
+            tr[cur] = (j+1)*0.25;
             
             //now create the plane centering the location
             [location createParticle];
@@ -383,7 +422,7 @@
         
     }
 
-    NSLog(@"count %d", count);
+//    NSLog(@"count %d", count);
 
 }
 
@@ -855,31 +894,7 @@
     if(self.viewChanged==NO){
         return;
     }
-    
-    //update the particles
-    int count=0;
-    for(int index=0; index <totalParticles; index++){
-        TexImgTween* particleTween = [self.particleTweens objectAtIndex:index];
-        PNT_EarthPoint* particle = [self.allParticles objectAtIndex:index];
-        self.viewChanged  = [particle updateVertex: particleTween.targetCenter
-                                              mode:self.viewType
-                                       timeElapsed: timePassedSinceStart
-                                          duration: _duration //durationRemaining
-                                             ratio:ratio];
-        
-        if(self.viewChanged){
-            
-            [particle createParticle];
-            for(int k=0;k<6; k++){
-                self.particles[count].positionCoords = particle.points[k];
-                count++;
-            }
-        }
-    }
 
-
-//    NSLog(@"ratio = %f", ratio);
-    //    NSLog(@"inside animation");
     for(int index =0; index < totalPoints; index++){
         PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
         TexImgTween* tween = [self.earthTweens objectAtIndex:index];
@@ -949,8 +964,27 @@
 //        }
     }
     
-    
-    
+    //update the particles
+    int count=0;
+    for(int index=0; index <totalParticles; index++){
+        TexImgTween* particleTween = [self.particleTweens objectAtIndex:index];
+        PNT_EarthPoint* particle = [self.allParticles objectAtIndex:index];
+        self.viewChanged  = [particle updateVertex: particleTween.targetCenter
+                                              mode:self.viewType
+                                       timeElapsed: timePassedSinceStart
+                                          duration: _duration //durationRemaining
+                                             ratio:ratio];
+        
+        if(self.viewChanged){
+            
+            [particle createParticle];
+            for(int k=0;k<6; k++){
+                self.particles[count].positionCoords = particle.points[k];
+                count++;
+            }
+        }
+    }
+
    }
 
 
@@ -994,6 +1028,47 @@
 
 -(void) moveParticles{
 
+    float delt = 0.5*[self timeSinceLastUpdate]/particleLife;
+
+    int count=0;
+    for(int index=0; index <totalParticles; index++){
+
+        int arcindex = index/3+1;
+        tr[index]+=delt;
+        float t = tr[index];
+
+        if(t>1.0){
+            t=1.0;
+            tr[index] = 0.0;
+        }
+     
+        PNT_EarthPoint* arc=[self.allCurves objectAtIndex:arcindex];
+        
+        GLKVector3 p0= arc.points[0];
+        GLKVector3 p1= arc.points[1];
+        GLKVector3 p2= arc.points[2];
+        GLKVector3 p3= arc.points[3];
+  
+//        NSLog(@"%d, delt %f, %d", arcindex, delt, j);
+        float nt = 1.0f - t;
+        GLKVector3 pointTarget = GLKVector3Make(p0.x * nt * nt * nt + 3.0 * p1.x * nt * nt * t + 3.0 * p2.x * nt * t * t +  p3.x * t * t * t,
+                                                p0.y * nt * nt * nt + 3.0 * p1.y * nt * nt * t + 3.0 * p2.y * nt * t * t +  p3.y * t * t * t,
+                                                p0.z * nt * nt * nt + 3.0 * p1.z * nt * nt * t + 3.0 * p2.z * nt * t * t +  p3.z * t * t * t);
+
+        
+        PNT_EarthPoint* particle = [self.allParticles objectAtIndex:index];
+        self.viewChanged = [particle updateParticleCenter:pointTarget];
+        
+        if(self.viewChanged) {
+ 
+            for(int k=0;k<6; k++){
+                self.particles[count].positionCoords = particle.points[k];
+                count++;
+            }
+        }
+    }
+ 
+    
     //move particles constarntly
     GLK2DrawCall* drawObject = [self.shapes objectAtIndex:3];
     [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
@@ -1051,12 +1126,13 @@
                                        offset:(void *)offsetof(CustomPoint, positionCoords)];
 
     }  else {
-    
-//        [self moveParticles];
+        if(self.barOrArc==ARC){
+           [self moveParticles];
+        }
     }
     
     if(self.viewType==GLOBE && self.viewChanged==NO && touchEnded==YES){
-       modelrotation.y -= 0.2;
+//      modelrotation.y -= 0.2;
     }
     
 }

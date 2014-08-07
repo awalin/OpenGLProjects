@@ -65,5 +65,5 @@
                    ratio:(float)ratio;
 
 -(void) createParticle;
-
+-(BOOL) updateParticleCenter:(GLKVector3) targetCenter;
 @end
