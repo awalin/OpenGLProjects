@@ -37,13 +37,11 @@
     
     if(GLKVector3Length(distanceC) == 0){
         //change complete
+        self.center = vrtx;
         return NO;
     }
     self.center = vrtx;
-    
-//    if(timeElapsed >= duration){
-//        self.center= targetCenter;
-//    }
+
     return YES;
     
 }

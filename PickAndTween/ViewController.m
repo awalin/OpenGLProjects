@@ -100,41 +100,7 @@
     [view bindDrawable];
     rows = 100;
     cols = 100;
-	totalPlanes = (cols-1)*(rows-1);
-    totalIndices = totalPlanes*6;
-    //    NSLog(@"total indices %d", totalIndices);
-    totalPoints = rows*cols;
-    self.locations = (CustomPoint*) malloc(totalPoints*sizeof(CustomPoint));
-    self.allLocations = [[NSMutableArray alloc] initWithCapacity:totalPoints];
-    
-    totalBars = (sizeof(_population)/sizeof(_population[0]));
-    totalLinePoints = 2*totalBars;
-    self.bars = (CustomPoint*)malloc(totalLinePoints*sizeof(CustomPoint));
-    self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
-    
-    segmentsPerCurve = 30;
-    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;// -1 as the first point is the centre of all arcs
-    totalCurvePoints = totalCurves*(segmentsPerCurve+1);
-    self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
-    self.allCurves = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];//all the curves and the centre point
-
-    self.earthTweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
-    self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
-    self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];
-    
-    totalParticles = totalCurves*3; // 3 particles per curve
-    totalParticlePoints = totalParticles*6;
-    self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
-    self.allParticles =  [[NSMutableArray alloc] initWithCapacity:totalParticles];
-    self.particleTweens = [[NSMutableArray alloc] initWithCapacity:totalParticles];
-    tr = (float*)malloc(totalParticles*sizeof(float));
-    
-    meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
-    
-    particleMotionStart = [NSDate date];
-    particleLife= 2.0;
-    bezierRatio = 0.0;
-    
+	   
     touchEnded = YES;
     friction = 0.90;
     _duration = 0.5;
@@ -204,8 +170,18 @@
 //This is static part//
 -(void) initData{
     
-    GLfloat s=0.0,t=0.0;
-    GLfloat u=0.0,v=0.0;
+    totalPlanes = (cols-1)*(rows-1);
+    totalIndices = totalPlanes*6;
+    //    NSLog(@"total indices %d", totalIndices);
+    totalPoints = rows*cols;
+    self.locations = (CustomPoint*) malloc(totalPoints*sizeof(CustomPoint));
+    self.allLocations = [[NSMutableArray alloc] initWithCapacity:totalPoints];
+    meshIndices = (GLuint*)malloc(totalIndices*sizeof(GLuint));
+    self.earthTweens = [[NSMutableArray alloc] initWithCapacity:totalPoints];
+
+    
+    GLfloat s=0.0, t=0.0;
+    GLfloat u=0.0, v=0.0;
     GLfloat y=0.0, x=0.0;
     GLKVector2 txtr;
     float spanTX = 1.0; //rect.size.width;//2.0;
@@ -283,15 +259,15 @@
             t = v ;
             txtr = GLKVector2Make(s, t); // BL (0,0)
             location.texCoord = txtr;
-            
-            int colorId = index+1;
-            int red = colorId % 255;
-			int green = colorId>= 255 ? (colorId/255)%255 : 0;
-			int blue = colorId>=255*255 ? (colorId/255)/255 : 0;
-			GLKVector4 colorV  = GLKVector4Make(red/255.0f, green/255.0f, blue/255.0f, 1);
+//            
+//            int colorId = index+1;
+//            int red = colorId % 255;
+//			int green = colorId>= 255 ? (colorId/255)%255 : 0;
+//			int blue = colorId>=255*255 ? (colorId/255)/255 : 0;
+//			GLKVector4 colorV  = GLKVector4Make(red/255.0f, green/255.0f, blue/255.0f, 1);
             
             self.locations[index].textureCoords = location.texCoord;
-            self.locations[index].colorCoords = colorV;
+//            self.locations[index].colorCoords = colorV;
             
             [self.allLocations insertObject:location atIndex:index];
             [self.earthTweens insertObject:tween atIndex:index];
@@ -341,6 +317,16 @@
     
     //now make the end points of all curves
 //    NSLog(@"%d", totalCurves);
+    totalParticles = totalCurves*3; // 3 particles per curve
+    totalParticlePoints = totalParticles*6;
+    self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
+    self.allParticles =  [[NSMutableArray alloc] initWithCapacity:totalParticles];
+    self.particleTweens = [[NSMutableArray alloc] initWithCapacity:totalParticles];
+    tr = (float*)malloc(totalParticles*sizeof(float));
+
+    particleLife= 2.0;
+    bezierRatio = 0.0;
+
     int count=0;
     for(int i=1; i<=totalCurves; i++){
         
@@ -423,6 +409,8 @@
     }
 
 //    NSLog(@"count %d", count);
+    
+    particleMotionStart = [NSDate date];
 
 }
 
@@ -437,6 +425,13 @@
 
 -(void) initCurves{
     
+    segmentsPerCurve = 30;
+    totalCurves = (sizeof(_country)/sizeof(_country[0]))-1;// -1 as the first point is the centre of all arcs
+    totalCurvePoints = totalCurves*(segmentsPerCurve+1);
+    self.curves = (CustomPoint*)malloc(totalCurvePoints*sizeof(CustomPoint));
+    self.allCurves = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];//all the curves and the centre point
+    self.curveTweens = [[NSMutableArray alloc] initWithCapacity:totalCurves+1];
+
     //create the centre source of all curve
     PNT_EarthPoint* location0 = [[PNT_EarthPoint alloc] init];
     location0.planeId=0;
@@ -543,6 +538,13 @@
 
 -(void) initBars{
     
+    totalBars = (sizeof(_population)/sizeof(_population[0]));
+    totalLinePoints = 2*totalBars;
+    self.bars = (CustomPoint*)malloc(totalLinePoints*sizeof(CustomPoint));
+    self.allLines = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
+    self.barTweens = [[NSMutableArray alloc] initWithCapacity:totalLinePoints];
+
+    
     for(int i=0;i<totalBars; i++){
         
         PNT_EarthPoint* location = [[PNT_EarthPoint alloc] init];
@@ -556,15 +558,15 @@
         GLfloat z1 = radius*cos(location.theta);
         location.roundLoc = GLKVector3Make( y1, z1, x1 );
         
-        float xp = 1-(180.0-_population[i].lon)/180.0;
-        float yp = 1-(90.0-_population[i].lat)/90.0;
+        float xp = imageAspect*_population[i].lon/180.0;
+        float yp = _population[i].lat/90.0;
         
-        location.flatLoc = GLKVector3Make(xp*imageAspect, yp, 0.0);
+        location.flatLoc = GLKVector3Make(xp, yp, 0.0);
         
         float L = 1.0;
         float S = 0.5;
         
-        float hue =  (pow(M_E,location.length))*0.5;//240.0f+ 120.0f*(1-pow(M_E,location.length));
+        float hue =  (1 - _population[i].magnitude) * 0.6;//(pow(M_E,location.length))*0.5;//240.0f+ 120.0f*(1-pow(M_E,location.length));
         
         GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
         
@@ -589,7 +591,7 @@
         tween2.duration = _duration;
         tween2.delay = tween.delay;
         tween2.globeCenter = endP;
-        tween2.wallCenter =   GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
+        tween2.wallCenter =  GLKVector3Make(xp, yp, location.length); //GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
         tween2.duration = _duration;
         [self.barTweens insertObject:tween2 atIndex:(i*2+1)];
         //       NSLog(@"color: %f %f %f", col.x, col.y, col.z);
@@ -606,7 +608,7 @@
         else {
             location.center = location.flatLoc;
             self.bars[i*2].positionCoords = location.flatLoc;
-            self.bars[i*2+1].positionCoords = GLKVector3Make(location.flatLoc.x, location.flatLoc.y, location.length);
+            self.bars[i*2+1].positionCoords = GLKVector3Make(xp, yp, location.length);
         }
         
         [self.allLines insertObject:location atIndex:i];
@@ -652,23 +654,19 @@
         //        NSLog(@"twn start time %@", tween.startTime);
         if(self.viewType==GLOBE){
             [tween setTargetCenter: tween.globeCenter];
-            [tween setSourceCenter: tween.wallCenter];
         } else if(self.viewType==WALL){
             [tween setTargetCenter: tween.wallCenter];
-            [tween setSourceCenter: tween.globeCenter];
         }
     }
     
     //bars
-    for(int index=0; index<totalBars*2; index++){
-        TexImgTween* tween = [self.barTweens objectAtIndex:index];
+    for(int index=0; index<totalBars; index++){
+        TexImgTween* tween = [self.barTweens objectAtIndex:index*2];
         tween.startTime = currentTime;
         if(self.viewType==GLOBE){
             [tween setTargetCenter: tween.globeCenter];
-            [tween setSourceCenter: tween.wallCenter];
         } else if(self.viewType==WALL){
-            [tween setTargetCenter: tween.wallCenter];
-            [tween setSourceCenter: tween.globeCenter];
+            [tween setTargetCenter:tween.wallCenter];
         }
     }
     
@@ -678,10 +676,8 @@
         tween.startTime = currentTime;
         if(self.viewType==GLOBE){
             [tween setTargetCenter: tween.globeCenter];
-            [tween setSourceCenter: tween.wallCenter];
         } else if(self.viewType==WALL){
             [tween setTargetCenter: tween.wallCenter];
-            [tween setSourceCenter: tween.globeCenter];
         }
     }
     
@@ -691,10 +687,8 @@
         tween.startTime = currentTime;
         if(self.viewType==GLOBE){
             [tween setTargetCenter: tween.globeCenter];
-            [tween setSourceCenter: tween.wallCenter];
         } else if(self.viewType==WALL){
             [tween setTargetCenter: tween.wallCenter];
-            [tween setSourceCenter: tween.globeCenter];
         }
     }
     
@@ -911,7 +905,7 @@
     
     for(int index =0; index < totalBars; index++){
         PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
-        TexImgTween* tween = [self.barTweens objectAtIndex:index];
+        TexImgTween* tween = [self.barTweens objectAtIndex:index*2];
 
         {
             self.viewChanged  = [location updateVertex:tween.targetCenter
