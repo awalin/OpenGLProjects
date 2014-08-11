@@ -18,6 +18,7 @@
     float friction;
     int taps;
     GLKTextureInfo * info ;
+    GLKTextureInfo* particleInfo;
     GLKVector3 velocity;
     GLKVector3 touchStart;
     NSDate *startTime;
@@ -263,12 +264,6 @@
             t = v ;
             txtr = GLKVector2Make(s, t); // BL (0,0)
             location.texCoord = txtr;
-//            
-//            int colorId = index+1;
-//            int red = colorId % 255;
-//			int green = colorId>= 255 ? (colorId/255)%255 : 0;
-//			int blue = colorId>=255*255 ? (colorId/255)/255 : 0;
-//			GLKVector4 colorV  = GLKVector4Make(red/255.0f, green/255.0f, blue/255.0f, 1);
             
             self.locations[index].textureCoords = location.texCoord;
 //            self.locations[index].colorCoords = colorV;
@@ -321,6 +316,13 @@
     
     //now make the end points of all curves
 //    NSLog(@"%d", totalCurves);
+    float texPos[6][2] = {
+            {0.0,0.0},  //bl
+            {1.0,0.0},  //br
+            {0.0,1.0},  //tl
+            {1.0,1.0},  //tr
+            {1.0,0.0},  //br
+            {0.0,1.0}}; //tl
     totalParticles = totalCurves*3; // 3 particles per curve
     totalParticlePoints = totalParticles*6;
     self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
@@ -404,9 +406,15 @@
             
             for(int k=0;k<6; k++){
                 self.particles[count].positionCoords = location.points[k];
+                
+                self.particles[count].textureCoords.x = texPos[k][0] ;
+                self.particles[count].textureCoords.y = texPos[k][1] ;
+                
                 self.particles[count].colorCoords = col;
                 count++;
             }
+            
+            
             
             [self.allParticles insertObject:location atIndex:cur];
         }
@@ -733,9 +741,15 @@
     NSString *path = [[NSBundle mainBundle] pathForResource:@"earthbw" ofType:@"jpeg"];
     info = [GLKTextureLoader textureWithContentsOfFile:path options:options error:&error];
     if (info == nil) {
-        NSLog(@"Error loading file: %@", [error localizedDescription]);
+        NSLog(@"Error loading file for earth: %@", [error localizedDescription]);
     }
-    self.effect.texture2d0.name = info.name;
+    
+
+    path = [[NSBundle mainBundle] pathForResource:@"particle" ofType:@"png"];
+    particleInfo = [GLKTextureLoader textureWithContentsOfFile:path options:options error:&error];
+    if (info == nil) {
+        NSLog(@"Error loading file: for particle %@", [error localizedDescription]);
+    }
     
     [self setUpEarth];
     
@@ -754,7 +768,6 @@
     }else {
         [self makePlane];
     }
-    //    toRotate = YES;
     
     GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
     drawObject.mode = GL_TRIANGLES;
@@ -849,7 +862,6 @@
     
     GLK2DrawCall* drawObject = [[GLK2DrawCall alloc] init ];
     drawObject.mode = GL_TRIANGLES;
-    
     drawObject.numOfVerticesToDraw = totalParticlePoints;
     drawObject.VAO = [[GLKVAObject alloc] init];
     
@@ -860,13 +872,20 @@
                                 stride:sizeof(CustomPoint)
                                 offset:(void *)offsetof(CustomPoint, positionCoords)];
     
-    
     [drawObject.VAO addVBOForAttribute:GLKVertexAttribColor
                         filledWithData:self.particles //addres of the bytes to copy
                            numVertices:drawObject.numOfVerticesToDraw
                            numOfFloats:4
                                 stride:sizeof(CustomPoint)
                                 offset:(void *)offsetof(CustomPoint, colorCoords) ];
+    
+    [drawObject.VAO addVBOForAttribute:GLKVertexAttribTexCoord0
+                        filledWithData:self.particles //addres of the bytes to copy
+                           numVertices:drawObject.numOfVerticesToDraw
+                           numOfFloats:2
+                                stride:sizeof(CustomPoint)
+                                offset:(void *)offsetof(CustomPoint, textureCoords) ];
+
     
     [self.shapes addObject: drawObject];
 
@@ -1175,6 +1194,8 @@
     
     {
         if( drawCall.VAO != nil ){
+            //    toRotate = YES;
+            self.effect.texture2d0.name = info.name;
             self.effect.texture2d0.enabled = YES;
             //            glDisableVertexAttribArray(GLKVertexAttribColor);
             [self.effect prepareToDraw];
@@ -1219,10 +1240,12 @@
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
     }
+    self.effect.texture2d0.enabled = YES;
     GLK2DrawCall* drawCall = [self.shapes objectAtIndex:3];
     {
         if( drawCall.VAO != nil ){
-            self.effect.texture2d0.enabled = NO;
+            self.effect.texture2d0.name = particleInfo.name;
+            self.effect.texture2d0.enabled = YES;
             [self.effect prepareToDraw];
             glEnableVertexAttribArray(GLKVertexAttribColor);
             [drawCall drawWithMode:GL_TRIANGLES];

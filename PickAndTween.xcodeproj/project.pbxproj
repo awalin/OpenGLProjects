@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		E72937661977292900535F02 /* PNT_EarthPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = E72937651977292900535F02 /* PNT_EarthPoint.m */; };
 		E730F5C0197EC9BA00A4A79E /* earthbw.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */; };
+		E7553E9A1999715E00DAE05C /* particle.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553E991999715E00DAE05C /* particle.png */; };
+		E7553E9C19997CA600DAE05C /* particles.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553E9B19997CA600DAE05C /* particles.png */; };
 		E7E78B4719633E0F00042D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4619633E0F00042D12 /* Foundation.framework */; };
 		E7E78B4919633E0F00042D12 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4819633E0F00042D12 /* CoreGraphics.framework */; };
 		E7E78B4B19633E0F00042D12 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4A19633E0F00042D12 /* UIKit.framework */; };
@@ -47,6 +49,8 @@
 		E72937641977292900535F02 /* PNT_EarthPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PNT_EarthPoint.h; sourceTree = "<group>"; };
 		E72937651977292900535F02 /* PNT_EarthPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PNT_EarthPoint.m; sourceTree = "<group>"; };
 		E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = earthbw.jpeg; path = ../../../Desktop/earthbw.jpeg; sourceTree = "<group>"; };
+		E7553E991999715E00DAE05C /* particle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = particle.png; path = ../../../Desktop/particle.png; sourceTree = "<group>"; };
+		E7553E9B19997CA600DAE05C /* particles.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = particles.png; sourceTree = "<group>"; };
 		E7E78B4319633E0F00042D12 /* PickAndTween.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PickAndTween.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7E78B4619633E0F00042D12 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		E7E78B4819633E0F00042D12 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -109,6 +113,8 @@
 		E7E78B3A19633E0F00042D12 = {
 			isa = PBXGroup;
 			children = (
+				E7553E9B19997CA600DAE05C /* particles.png */,
+				E7553E991999715E00DAE05C /* particle.png */,
 				E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */,
 				E7E78BA8196343CB00042D12 /* easing-functions.png */,
 				E7E78BAA196343CB00042D12 /* canvas1.png */,
@@ -278,6 +284,8 @@
 				E7E78BAD196343CB00042D12 /* canvas1.png in Resources */,
 				E7E78B9D19633ECC00042D12 /* main.storyboard in Resources */,
 				E7E78B5119633E0F00042D12 /* InfoPlist.strings in Resources */,
+				E7553E9A1999715E00DAE05C /* particle.png in Resources */,
+				E7553E9C19997CA600DAE05C /* particles.png in Resources */,
 				E7E78BAB196343CB00042D12 /* easing-functions.png in Resources */,
 				E7E78B9819633ECC00042D12 /* en.lproj in Resources */,
 				E730F5C0197EC9BA00A4A79E /* earthbw.jpeg in Resources */,

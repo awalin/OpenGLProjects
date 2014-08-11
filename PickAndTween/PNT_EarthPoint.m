@@ -281,8 +281,8 @@
     rot = GLKMatrix3Multiply(GLKMatrix3MakeYRotation( -self.planeRotation.y), rot);
 
     GLfloat s=0.0,t=0.0;
-    float width = 0.05;
-    float height = 0.05;
+    float width = 0.1;
+    float height = 0.1;
     GLfloat y =0;// self.center.y;
     GLfloat x =0;// self.center.x;
     GLfloat z =0;// self.center.z;
