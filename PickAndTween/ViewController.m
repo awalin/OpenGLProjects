@@ -71,6 +71,7 @@
     TexImgTweenFunction* tweenFunction;
     int segmentsPerCurve;
     float ratio;
+    BOOL updated;
 }
 
 
@@ -102,11 +103,13 @@
     cols = 100;
 	   
     touchEnded = YES;
+    self.viewChanged = NO;
     friction = 0.90;
     _duration = 0.5;
     delay=0.0;//0.00001;
     velocity = GLKVector3Make(0,0,0);
     zoomscale = 1.0;
+    updated= NO;
     
     radius = 1;
     resetCalled = NO;
@@ -204,6 +207,7 @@
     offsetY = -1.0f;
     eachWidth = spanX/(cols-1);
     eachHeight = spanY/(rows-1);
+ 
     
     int index =0 ;
     float phi;
@@ -885,36 +889,20 @@
 }
 
 -(void) animateView{
+    
     if(self.viewChanged==NO){
         return;
     }
 
-    for(int index =0; index < totalPoints; index++){
-        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
-        TexImgTween* tween = [self.earthTweens objectAtIndex:index];
-        self.viewChanged = [location updateVertex:tween.targetCenter
-                                               mode:self.viewType
-                                        timeElapsed: timePassedSinceStart
-                                           duration: _duration //durationRemaining
-                                              ratio:ratio];
-      
-    
-        self.locations[index].positionCoords = location.center;
-    }
-    
-    
     for(int index =0; index < totalBars; index++){
         PNT_EarthPoint* location = [self.allLines objectAtIndex:index];
         TexImgTween* tween = [self.barTweens objectAtIndex:index*2];
-
-        {
-            self.viewChanged  = [location updateVertex:tween.targetCenter
-                                               mode:self.viewType
-                                        timeElapsed: timePassedSinceStart
-                                           duration: _duration
-                                              ratio:ratio];
+        [location updateVertex:tween.targetCenter
+                          mode:self.viewType
+                   timeElapsed: timePassedSinceStart
+                      duration: _duration
+                         ratio:ratio];
          
-        }
         self.bars[index*2].positionCoords = location.center;
         
         if(self.viewType==GLOBE){
@@ -934,7 +922,7 @@
     
     //update the center of all the arcs
     PNT_EarthPoint* location = [self.allCurves objectAtIndex:0];
-    self.viewChanged  = [location updateVertex:tween0.targetCenter
+      [location updateVertex:tween0.targetCenter
                                            mode:self.viewType
                                     timeElapsed: timePassedSinceStart
                                           duration: _duration
@@ -944,8 +932,7 @@
     for(int index=1; index < totalCurves+1; index++){
         PNT_EarthPoint* location = [self.allCurves objectAtIndex:index];
 
-//        {
-            self.viewChanged  =[location updateBezierView:self.viewType
+          [location updateBezierView:self.viewType
                                               segments:segmentsPerCurve
                                            timeElapsed: timePassedSinceStart
                                               duration: _duration
@@ -954,8 +941,6 @@
                 self.curves[(index-1)*(segmentsPerCurve+1)+j].positionCoords = location.points[j+4];
             }
 
-         
-//        }
     }
     
     //update the particles
@@ -963,14 +948,13 @@
     for(int index=0; index <totalParticles; index++){
         TexImgTween* particleTween = [self.particleTweens objectAtIndex:index];
         PNT_EarthPoint* particle = [self.allParticles objectAtIndex:index];
-        self.viewChanged  = [particle updateVertex: particleTween.targetCenter
+        updated  = [particle updateVertex: particleTween.targetCenter
                                               mode:self.viewType
                                        timeElapsed: timePassedSinceStart
                                           duration: _duration //durationRemaining
                                              ratio:ratio];
         
-        if(self.viewChanged){
-            
+        if(updated){
             [particle createParticle];
             for(int k=0;k<6; k++){
                 self.particles[count].positionCoords = particle.points[k];
@@ -978,6 +962,18 @@
             }
         }
     }
+    
+    for(int index =0; index < totalPoints; index++){
+        PNT_EarthPoint* location = [self.allLocations objectAtIndex:index];
+        TexImgTween* tween = [self.earthTweens objectAtIndex:index];
+        updated = [location updateVertex:tween.targetCenter
+                          mode:self.viewType
+                   timeElapsed: timePassedSinceStart
+                      duration: _duration //durationRemaining
+                         ratio:ratio];
+        self.locations[index].positionCoords = location.center;
+    }
+    
 
    }
 
@@ -987,7 +983,7 @@
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect {
     
-    glClearColor(0.1, 0.1, 0.1, 1);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
@@ -1001,8 +997,6 @@
 	modelViewMatrix = GLKMatrix4Multiply(modelViewMatrix, rotymatrix);
 	modelViewMatrix = GLKMatrix4Multiply(baseModelViewMatrix, modelViewMatrix);
     self.effect.transform.modelviewMatrix = modelViewMatrix;
-    
-    
     
     if( [EAGLContext currentContext] == nil ) // skip until we have a context
     {
@@ -1051,9 +1045,10 @@
 
         
         PNT_EarthPoint* particle = [self.allParticles objectAtIndex:index];
-        self.viewChanged = [particle updateParticleCenter:pointTarget];
+
+        BOOL changed = [particle updateParticleCenter:pointTarget withRotation:modelrotation];
         
-        if(self.viewChanged) {
+        if(changed) {
  
             for(int k=0;k<6; k++){
                 self.particles[count].positionCoords = particle.points[k];
@@ -1062,7 +1057,6 @@
         }
     }
  
-    
     //move particles constarntly
     GLK2DrawCall* drawObject = [self.shapes objectAtIndex:3];
     [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
@@ -1075,20 +1069,17 @@
 }
 
 -(void) update {
-  
-    if(self.viewChanged) {
-        toRotate=NO;
-        
-        timePassedSinceStart = -[currentTime timeIntervalSinceNow];
-        ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
-//        NSLog(@"time passed since start %f", timePassedSinceStart);
-        //add +0.1, hack, as we don't know the exact update scedule, otherwise the drawing is not complete
-        if(timePassedSinceStart > _duration+0.1){
-            self.viewChanged = NO;
-        } else {
-            [self animateView];// changes the points
+
+    timePassedSinceStart = -[currentTime timeIntervalSinceNow];
+    
+    if(self.viewChanged  && (timePassedSinceStart < _duration+1.0)){
+
+       ratio = [tweenFunction calculateTweenWithTime: timePassedSinceStart duration:_duration];
+        if(ratio>1){
+            ratio=1.0;
         }
-        
+       [self animateView];// changes the points
+    
         //update earth
         //TODO: use function calls from drawcall object rathert han using directly
         glBindBuffer(GL_ARRAY_BUFFER, locationVertexBuffer);
@@ -1102,9 +1093,9 @@
                                   numOfFloats:3 //floats in GLKVector3
                                        stride:sizeof(CustomPoint)
                                        offset:(void *)offsetof(CustomPoint, positionCoords)];
-       //update curves
-       drawObject = [self.shapes objectAtIndex:2];
-       [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
+        //update curves
+        drawObject = [self.shapes objectAtIndex:2];
+        [drawObject.VAO updateVBOForAttribute:GLKVertexAttribPosition
                                filledWithData:self.curves //addres of the bytes to copy
                                   numVertices:drawObject.numOfVerticesToDraw
                                   numOfFloats:3 //floats in GLKVector3
@@ -1118,17 +1109,21 @@
                                   numOfFloats:3 //floats in GLKVector3
                                        stride:sizeof(CustomPoint)
                                        offset:(void *)offsetof(CustomPoint, positionCoords)];
-
-    }  else {
-        if(self.barOrArc==ARC){
-           [self moveParticles];
+        
+        if(updated==NO){
+            self.viewChanged=NO;
         }
+        
+        
+    }
+
+    if(self.barOrArc==ARC){
+        [self moveParticles];
     }
     
-    if(self.viewType==GLOBE && self.viewChanged==NO && touchEnded==YES){
-//      modelrotation.y -= 0.2;
+    if(self.viewType==GLOBE && /*self.viewChanged==NO && */ touchEnded==YES){
+        modelrotation.y += self.timeSinceLastUpdate * 0.5f;
     }
-    
 }
 
 -(void) renderCurves{
@@ -1224,8 +1219,6 @@
 		NSLog(@"no drawcalls specified; rendering nothing");
         return;
     }
-//    NSLog(@"rendering particles");
-    //for( GLK2DrawCall* drawCall in self.shapes )
     GLK2DrawCall* drawCall = [self.shapes objectAtIndex:3];
     {
         if( drawCall.VAO != nil ){
@@ -1238,10 +1231,8 @@
             NSLog(@"not available");
         }
     }
-
-
-
 }
+
 -(void) zoomWithPinchGesture:(UIPinchGestureRecognizer*) sender{
     
     GLfloat scale;
@@ -1279,11 +1270,12 @@
             
             currentRotation.x = modelrotation.x;
             currentRotation.y = modelrotation.y;
-            
+            return;
         } else if (recognizer.state==UIGestureRecognizerStateChanged) {
             
             if(touchEnded)
                 return;
+            //else
             modelrotation.x =  currentRotation.x+ (diff.y * 0.01);
             modelrotation.y =  currentRotation.y+ (diff.x * 0.01);
         }

@@ -66,4 +66,7 @@
 
 -(void) createParticle;
 -(BOOL) updateParticleCenter:(GLKVector3) targetCenter;
+
+-(BOOL) updateParticleCenter:(GLKVector3)pointTarget
+                withRotation:(GLKVector3)angle;
 @end

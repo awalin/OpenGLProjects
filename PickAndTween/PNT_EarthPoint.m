@@ -60,6 +60,112 @@
     
 }
 
+-(BOOL) updateParticleCenter:(GLKVector3)targetCenter
+                withRotation:(GLKVector3)angle{
+
+
+    GLKVector3 distanceC ;
+
+GLKVector3 vrtx;
+GLfloat eachWidth = self.width;
+GLfloat eachHeight = self.height;
+
+GLKMatrix3 rot = GLKMatrix3Identity;
+GLKVector3 c = GLKVector3Make( 0, 0, 0);
+GLKVector3* targets =  (GLKVector3*) malloc(6*sizeof(GLKVector3));
+
+targets[0]= GLKVector3Make(c.x - eachWidth/2,  c.y - eachHeight/2, c.z);// BL
+targets[1]= GLKVector3Make(c.x + eachWidth/2,  c.y - eachHeight/2, c.z); // BR
+targets[2]= GLKVector3Make(c.x - eachWidth/2,  c.y + eachHeight/2, c.z); //TL
+targets[3]= GLKVector3Make(c.x + eachWidth/2,  c.y + eachHeight/2, c.z); //TR
+targets[4]= GLKVector3Make(c.x + eachWidth/2,  c.y - eachHeight/2, c.z); //BR
+targets[5]= GLKVector3Make(c.x - eachWidth/2,  c.y + eachHeight/2, c.z); //TL
+
+    //        NSLog(@"GLOBE");
+rot = GLKMatrix3MakeXRotation(-angle.x);
+rot = GLKMatrix3Multiply(GLKMatrix3MakeYRotation( -angle.y), rot);
+
+
+//Center
+vrtx = targetCenter;
+
+distanceC = GLKVector3Subtract(vrtx, self.center);
+
+if(GLKVector3Length(distanceC) == 0){
+    //change complete
+    return NO;
+}
+self.center = vrtx;
+self.planeRotation = angle;
+
+
+    [self createParticle];
+    return YES;
+
+    return YES;
+
+}
+
+-(void) updateParticle{
+
+
+    GLKMatrix3 rot = GLKMatrix3Identity;    //        NSLog(@"GLOBE");
+    rot = GLKMatrix3MakeXRotation(-self.planeRotation.x);
+    rot = GLKMatrix3Multiply(GLKMatrix3MakeYRotation( -self.planeRotation.y), rot);
+    
+    GLfloat s=0.0,t=0.0;
+    float width = 0.05;
+    float height = 0.05;
+    GLfloat y = 0.0;
+    GLfloat x = 0.0;
+    GLfloat z = 0.0;
+    
+    //    NSLog(@"plane id %d: %f, %f, %f ", self.planeId, x, y, z);
+    //BL
+    s =  x - width/2 ;
+    t =  y - height/2;
+    GLKVector3 vrtx = GLKVector3Make(s, t, z);
+    self.points[0] = vrtx;
+    
+    //BR
+    s =  x + width/2 ;//s+eachRow;
+    t =  y - height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z);
+    self.points[1] = vrtx;
+    
+    //TL
+    s =  x - width/2 ;//s+eachRow;
+    t =  y + height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z); // base
+    self.points[2] = vrtx;
+    
+    //TR
+    s =  x + width/2 ;//s+eachRow;
+    t =  y + height/2;  //t;
+    vrtx =  GLKVector3Make(s, t, z); // base
+    self.points[3] = vrtx;
+    
+    //two more
+    //BR
+    s = x + width/2 ;//s+eachRow;
+    t = y - height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z); // base
+    self.points[4] = vrtx;
+    
+    //TL
+    s = x - width/2 ;//s+eachRow;
+    t = y + height/2;  //t;
+    vrtx = GLKVector3Make(s, t, z); // base
+    self.points[5] = vrtx;
+    
+    for(int i =0; i< 6; i++){
+        vrtx = self.points[i];
+        vrtx = GLKMatrix3MultiplyVector3(rot, vrtx);
+        vrtx= GLKVector3Add(vrtx,self.center);
+        self.points[i]=vrtx;
+    }
+}
+
 -(void) createBezierStart:(PNT_EarthPoint*) start view:(ViewType)vType segments:(int)segments{
     
     //4+20, 20=segments
