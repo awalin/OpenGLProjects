@@ -397,6 +397,7 @@
             tween.wallCenter =  location.flatLoc;
             [self.particleTweens insertObject:tween atIndex:cur];
             tr[cur] = (j+1)*0.25;
+            location.planeRotation = GLKVector3Make(0.0,0.0,0.0);
             
             //now create the plane centering the location
             [location createParticle];
@@ -1114,7 +1115,6 @@
             self.viewChanged=NO;
         }
         
-        
     }
 
     if(self.barOrArc==ARC){
@@ -1122,7 +1122,7 @@
     }
     
     if(self.viewType==GLOBE && /*self.viewChanged==NO && */ touchEnded==YES){
-        modelrotation.y += self.timeSinceLastUpdate * 0.5f;
+//        modelrotation.y += self.timeSinceLastUpdate * 0.5f;
     }
 }
 
