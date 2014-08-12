@@ -317,11 +317,11 @@
     //now make the end points of all curves
 //    NSLog(@"%d", totalCurves);
     float texPos[6][2] = {
-            {0.0,0.0},  //bl
-            {1.0,0.0},  //br
+            {0.0,0.75},  //bl
+            {0.25,0.75},  //br
             {0.0,1.0},  //tl
-            {1.0,1.0},  //tr
-            {1.0,0.0},  //br
+            {0.25,1.0},  //tr
+            {0.25,0.75},  //br
             {0.0,1.0}}; //tl
     totalParticles = totalCurves*3; // 3 particles per curve
     totalParticlePoints = totalParticles*6;
@@ -346,7 +346,7 @@
             GLKVector3 p2 = arc.points[2];
             GLKVector3 p3 = arc.points[3];
     
-            float t = (j+1)*0.25;
+            float t = (j+1)*0.30;
             float nt = 1.0f -t;
             
             GLKVector3 pointTarget = GLKVector3Make(p0.x * nt * nt * nt + 3.0 * p1.x * nt * nt * t + 3.0 * p2.x * nt * t * t +  p3.x * t * t * t,
@@ -386,7 +386,7 @@
             float L = 1.0;
             float S = 0.5;
             float hue =  0.4*cur/totalParticles;
-            GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
+            GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:0.5];
             
             //there will be a lot more tweens. For each curve, segment+1 number of tweens and points
             TexImgTween* tween = [[TexImgTween alloc] init];
@@ -745,7 +745,7 @@
     }
     
 
-    path = [[NSBundle mainBundle] pathForResource:@"particle" ofType:@"png"];
+    path = [[NSBundle mainBundle] pathForResource:@"particleicons" ofType:@"png"];
     particleInfo = [GLKTextureLoader textureWithContentsOfFile:path options:options error:&error];
     if (info == nil) {
         NSLog(@"Error loading file: for particle %@", [error localizedDescription]);
@@ -1141,7 +1141,7 @@
     }
     
     if(self.viewType==GLOBE && /*self.viewChanged==NO && */ touchEnded==YES){
-//        modelrotation.y += self.timeSinceLastUpdate * 0.5f;
+        modelrotation.y += self.timeSinceLastUpdate * 0.5f;
     }
 }
 

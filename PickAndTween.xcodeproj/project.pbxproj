@@ -11,6 +11,10 @@
 		E730F5C0197EC9BA00A4A79E /* earthbw.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */; };
 		E7553E9A1999715E00DAE05C /* particle.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553E991999715E00DAE05C /* particle.png */; };
 		E7553E9C19997CA600DAE05C /* particles.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553E9B19997CA600DAE05C /* particles.png */; };
+		E7553E9E199A897F00DAE05C /* particles2.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553E9D199A897F00DAE05C /* particles2.png */; };
+		E7553EA1199A98CA00DAE05C /* particleicon.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = E7553E9F199A98CA00DAE05C /* particleicon.jpeg */; };
+		E7553EA2199A98CA00DAE05C /* particleicons.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553EA0199A98CA00DAE05C /* particleicons.png */; };
+		E7553EA4199A997400DAE05C /* particle-one.png in Resources */ = {isa = PBXBuildFile; fileRef = E7553EA3199A997400DAE05C /* particle-one.png */; };
 		E7E78B4719633E0F00042D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4619633E0F00042D12 /* Foundation.framework */; };
 		E7E78B4919633E0F00042D12 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4819633E0F00042D12 /* CoreGraphics.framework */; };
 		E7E78B4B19633E0F00042D12 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7E78B4A19633E0F00042D12 /* UIKit.framework */; };
@@ -51,6 +55,10 @@
 		E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = earthbw.jpeg; path = ../../../Desktop/earthbw.jpeg; sourceTree = "<group>"; };
 		E7553E991999715E00DAE05C /* particle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = particle.png; path = ../../../Desktop/particle.png; sourceTree = "<group>"; };
 		E7553E9B19997CA600DAE05C /* particles.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = particles.png; sourceTree = "<group>"; };
+		E7553E9D199A897F00DAE05C /* particles2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = particles2.png; path = "../../../ios-3DGeoSpatialViz/3DVisualization/particles2.png"; sourceTree = "<group>"; };
+		E7553E9F199A98CA00DAE05C /* particleicon.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = particleicon.jpeg; path = ../../../Desktop/particleicon.jpeg; sourceTree = "<group>"; };
+		E7553EA0199A98CA00DAE05C /* particleicons.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = particleicons.png; path = ../../../Desktop/particleicons.png; sourceTree = "<group>"; };
+		E7553EA3199A997400DAE05C /* particle-one.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "particle-one.png"; path = "../../../Desktop/particle-one.png"; sourceTree = "<group>"; };
 		E7E78B4319633E0F00042D12 /* PickAndTween.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PickAndTween.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7E78B4619633E0F00042D12 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		E7E78B4819633E0F00042D12 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -113,6 +121,10 @@
 		E7E78B3A19633E0F00042D12 = {
 			isa = PBXGroup;
 			children = (
+				E7553EA3199A997400DAE05C /* particle-one.png */,
+				E7553E9F199A98CA00DAE05C /* particleicon.jpeg */,
+				E7553EA0199A98CA00DAE05C /* particleicons.png */,
+				E7553E9D199A897F00DAE05C /* particles2.png */,
 				E7553E9B19997CA600DAE05C /* particles.png */,
 				E7553E991999715E00DAE05C /* particle.png */,
 				E730F5BF197EC9BA00A4A79E /* earthbw.jpeg */,
@@ -281,12 +293,16 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7553EA2199A98CA00DAE05C /* particleicons.png in Resources */,
 				E7E78BAD196343CB00042D12 /* canvas1.png in Resources */,
 				E7E78B9D19633ECC00042D12 /* main.storyboard in Resources */,
 				E7E78B5119633E0F00042D12 /* InfoPlist.strings in Resources */,
 				E7553E9A1999715E00DAE05C /* particle.png in Resources */,
+				E7553EA4199A997400DAE05C /* particle-one.png in Resources */,
 				E7553E9C19997CA600DAE05C /* particles.png in Resources */,
 				E7E78BAB196343CB00042D12 /* easing-functions.png in Resources */,
+				E7553EA1199A98CA00DAE05C /* particleicon.jpeg in Resources */,
+				E7553E9E199A897F00DAE05C /* particles2.png in Resources */,
 				E7E78B9819633ECC00042D12 /* en.lproj in Resources */,
 				E730F5C0197EC9BA00A4A79E /* earthbw.jpeg in Resources */,
 				E7E78B5919633E0F00042D12 /* Images.xcassets in Resources */,
