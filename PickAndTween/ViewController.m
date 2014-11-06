@@ -283,25 +283,17 @@
             int first = r*cols+c;
             int second = (r+1)*cols+c;
             count = (first-r)*6 ;
-            //         NSLog(@"count %d, %d, %d ", first, (first-r)*6, count);
-            //BL
             meshIndices[count] = first;
-            //        NSLog(@"%d", meshIndices[count]);
             count++;
             meshIndices[count] = second;
-            //        NSLog(@"%d", meshIndices[count]);
             count++;
             meshIndices[count] = first+1;
-            //        NSLog(@"%d", meshIndices[count]);
             count++;
             meshIndices[count] = first+1;
-            //        NSLog(@"%d", meshIndices[count]);
             count++;
             meshIndices[count] = second;
-            //        NSLog(@"%d", meshIndices[count]);
             count++;
             meshIndices[count] = second+1;
-            //        NSLog(@"%d", meshIndices[count]);
             
         }
     
@@ -312,17 +304,35 @@
 }
 
 -(void) initParticles{
+    //introduce delay in particle emission
   
-    
-    //now make the end points of all curves
+//now make the end points of all curves
 //    NSLog(@"%d", totalCurves);
-    float texPos[6][2] = {
-            {0.0,0.75},  //bl
-            {0.25,0.75},  //br
-            {0.0,1.0},  //tl
-            {0.25,1.0},  //tr
-            {0.25,0.75},  //br
-            {0.0,1.0}}; //tl
+//    float texPos[6][2] = {
+//            {0.0,0.75},  //bl
+//            {0.25,0.75},  //br
+//            {0.0,1.0},  //tl
+//            {0.25,1.0},  //tr
+//            {0.25,0.75},  //br
+//            {0.0,1.0}}; //tl
+    
+//    float texPos[6][2] = {
+//        {0.0,0.0},  //bl
+//        {1.0,0.0},  //br
+//        {0.0,1.0},  //tl
+//        {1.0,1.0},  //tr
+//        {1.0,0.0},  //br
+//        {0.0,1.0}}; //tl
+    
+float texPos[6][2] = {
+        {0.5,0.5},  //bl
+        {1.0,0.5},  //br
+        {0.5,1.0},  //tl
+        {1.0,1.0},  //tr
+        {1.0,0.5},  //br
+        {0.5,1.0}}; //tl
+    
+    
     totalParticles = totalCurves*3; // 3 particles per curve
     totalParticlePoints = totalParticles*6;
     self.particles = (CustomPoint*)malloc(totalParticlePoints*sizeof(CustomPoint));
@@ -338,7 +348,7 @@
         
         PNT_EarthPoint* arc = [self.allCurves objectAtIndex:i];
         for(int j = 0 ; j < 3 ; j++){
-            int cur = (i-1)*3+j;
+            int cur = (i-1)*3+j;//index of the particle
             
 //            NSLog(@"j=%d, i=%d", j, cur);
             GLKVector3 p0 = arc.points[0];
@@ -346,7 +356,8 @@
             GLKVector3 p2 = arc.points[2];
             GLKVector3 p3 = arc.points[3];
     
-            float t = (j+1)*0.30;
+            float t ;// (j+1)*0.30;
+            t = tr[cur] = (j+1)*0.25;
             float nt = 1.0f -t;
             
             GLKVector3 pointTarget = GLKVector3Make(p0.x * nt * nt * nt + 3.0 * p1.x * nt * nt * t + 3.0 * p2.x * nt * t * t +  p3.x * t * t * t,
@@ -385,8 +396,9 @@
             location.flatLoc  = pointTarget;
             float L = 1.0;
             float S = 0.5;
-            float hue =  0.4*cur/totalParticles;
-            GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:0.5];
+            float hue =  0.6*i/totalCurves;
+            GLKVector4 col = [self toRGBwithHue:hue saturation:S value:L alpha:1.0];
+            col.a = 0.7;// = GLKVector4Make(col.r,col.g,col.b, 0.7);
             
             //there will be a lot more tweens. For each curve, segment+1 number of tweens and points
             TexImgTween* tween = [[TexImgTween alloc] init];
@@ -398,7 +410,9 @@
             tween.globeCenter = location.roundLoc;
             tween.wallCenter =  location.flatLoc;
             [self.particleTweens insertObject:tween atIndex:cur];
-            tr[cur] = (j+1)*0.25;
+            
+         
+            
             location.planeRotation = GLKVector3Make(0.0,0.0,0.0);
             
             //now create the plane centering the location
@@ -745,7 +759,7 @@
     }
     
 
-    path = [[NSBundle mainBundle] pathForResource:@"particleicons" ofType:@"png"];
+    path = [[NSBundle mainBundle] pathForResource:@"particles2" ofType:@"png"];
     particleInfo = [GLKTextureLoader textureWithContentsOfFile:path options:options error:&error];
     if (info == nil) {
         NSLog(@"Error loading file: for particle %@", [error localizedDescription]);
@@ -1036,20 +1050,22 @@
 
 -(void) moveParticles{
 
-    float delt = 0.5*[self timeSinceLastUpdate]/particleLife;
-
+    float timesince=[self timeSinceLastUpdate];
+    
     int count=0;
     for(int index=0; index <totalParticles; index++){
-
         int arcindex = index/3+1;
-        tr[index]+=delt;
+      
+        if(tr[index]>1.0){
+            tr[index]=0.0;
+        }
+        
+        float delt = 0.5*timesince/(particleLife);
+        
+        tr[index] += delt;
+        
         float t = tr[index];
 
-        if(t>1.0){
-            t=1.0;
-            tr[index] = 0.0;
-        }
-     
         PNT_EarthPoint* arc=[self.allCurves objectAtIndex:arcindex];
         
         GLKVector3 p0= arc.points[0];

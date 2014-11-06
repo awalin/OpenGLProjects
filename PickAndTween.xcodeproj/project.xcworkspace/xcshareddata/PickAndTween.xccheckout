@@ -10,26 +10,30 @@
 	<string>PickAndTween</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
+		<key>185CF329D6E6DED3EE9E74005F0352637067E334</key>
+		<string>https://github.com/awalin/OpenGLProjects.git</string>
+		<key>6BBB719F1AC0267021BB00780D0B4C68F4828412</key>
+		<string>http://10.21.16.112/GitRepo/ios-3DGeoSpatialViz.git</string>
 		<key>70ABCEAE-25A9-4516-91B2-C8CB9E5B4816</key>
 		<string>http://10.21.16.112/GitRepo/ios-3DGeoSpatialViz.git</string>
-		<key>B1C44A07-35BB-4B3D-86F6-DB4B519D1CCC</key>
-		<string>https://github.com/awalin/OpenGLProjects.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>PickAndTween.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>70ABCEAE-25A9-4516-91B2-C8CB9E5B4816</key>
-		<string>../../../../../ios-3DGeoSpatialViz</string>
-		<key>B1C44A07-35BB-4B3D-86F6-DB4B519D1CCC</key>
+		<key>185CF329D6E6DED3EE9E74005F0352637067E334</key>
 		<string>../..</string>
+		<key>6BBB719F1AC0267021BB00780D0B4C68F4828412</key>
+		<string>../../../ios-3DGeoSpatialViz</string>
+		<key>70ABCEAE-25A9-4516-91B2-C8CB9E5B4816</key>
+		<string>../../../ios-3DGeoSpatialViz</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/awalin/OpenGLProjects.git</string>
 	<key>IDESourceControlProjectVersion</key>
-	<integer>110</integer>
+	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>B1C44A07-35BB-4B3D-86F6-DB4B519D1CCC</string>
+	<string>185CF329D6E6DED3EE9E74005F0352637067E334</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
@@ -44,7 +48,15 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>B1C44A07-35BB-4B3D-86F6-DB4B519D1CCC</string>
+			<string>6BBB719F1AC0267021BB00780D0B4C68F4828412</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ios-3DGeoSpatialViz</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>185CF329D6E6DED3EE9E74005F0352637067E334</string>
 			<key>IDESourceControlWCCName</key>
 			<string>PickAndTween</string>
 		</dict>
